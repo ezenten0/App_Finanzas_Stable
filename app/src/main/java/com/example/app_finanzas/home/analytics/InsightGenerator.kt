@@ -1,5 +1,8 @@
 package com.example.app_finanzas.home.analytics
 
+import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.example.app_finanzas.data.budget.BudgetGoal
 import com.example.app_finanzas.home.model.Transaction
 import com.example.app_finanzas.home.model.TransactionType
@@ -15,8 +18,11 @@ import kotlin.math.abs
  */
 object InsightGenerator {
 
+    @SuppressLint("ConstantLocale")
+    @RequiresApi(Build.VERSION_CODES.O)
     private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault())
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun buildInsights(
         transactions: List<Transaction>,
         budgets: List<BudgetGoal>
@@ -98,10 +104,12 @@ object InsightGenerator {
         return insights.distinctBy { it.id }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun transactionMonth(transaction: Transaction): LocalDate {
         return parseDate(transaction.date)?.withDayOfMonth(1) ?: LocalDate.now().withDayOfMonth(1)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun parseDate(date: String): LocalDate? {
         return try {
             LocalDate.parse(date, formatter)
