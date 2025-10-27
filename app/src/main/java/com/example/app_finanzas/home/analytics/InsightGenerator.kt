@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
 import kotlin.math.abs
-
+// Cambiar Símbolo (Euro) por (Peso) y sin decimales.
 /**
  * Generates actionable insights and projections so the user understands how to
  * grow their money based on the latest transactions and configured budgets.
@@ -38,6 +38,7 @@ object InsightGenerator {
             insights += FinancialInsight(
                 id = "savings",
                 title = "Ritmo de ahorro positivo",
+                // Cambiar Símbolo (Euro) por (Peso) y sin decimales.
                 message = "Podrías ahorrar aproximadamente %.2f€ en los próximos 3 meses si mantienes el ritmo actual.".format(projected),
                 category = InsightCategory.SAVINGS
             )
@@ -45,6 +46,7 @@ object InsightGenerator {
             insights += FinancialInsight(
                 id = "overspend",
                 title = "Gasto por encima de los ingresos",
+                // Cambiar Símbolo (Euro) por (Peso) y sin decimales.
                 message = "Estás gastando %.2f€ más de lo que ingresas este mes. Ajusta tus presupuestos para evitar pérdidas.".format(abs(netBalance)),
                 category = InsightCategory.WARNING
             )
@@ -107,7 +109,7 @@ object InsightGenerator {
             null
         }
     }
-
+// Función para formatear el monto con dos decimales y el símbolo de euro. Cambiar Símbolo (Euro) por (Peso).
     private fun formatAmount(value: Double): String {
         return "%.2f€".format(value)
     }
