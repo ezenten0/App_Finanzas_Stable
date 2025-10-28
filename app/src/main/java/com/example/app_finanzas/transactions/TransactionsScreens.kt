@@ -59,7 +59,7 @@ import java.time.format.FormatStyle
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-private val numberFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "ES"))
+private val numberFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
 
 /**
  * High level route that surfaces all transactions persisted in the database.

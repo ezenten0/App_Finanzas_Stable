@@ -52,7 +52,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.max
 
-private val statsNumberFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "ES"))
+private val statsNumberFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
 
 /**
  * Route that aggregates the stored transactions into high level statistics.

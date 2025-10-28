@@ -63,7 +63,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val currencyFormatter: NumberFormat =
-    NumberFormat.getCurrencyInstance(Locale.Builder().setLanguage("es").setRegion("ES").build())
+    NumberFormat.getCurrencyInstance(Locale.Builder().setLanguage("es").setRegion("CL").build())
 
 /**
  * Entry point composable that wires the [HomeViewModel] to the UI and reacts to

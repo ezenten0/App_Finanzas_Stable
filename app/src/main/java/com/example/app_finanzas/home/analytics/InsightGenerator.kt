@@ -117,9 +117,9 @@ object InsightGenerator {
             null
         }
     }
-// Función para formatear el monto con dos decimales y el símbolo de euro. Cambiar Símbolo (Euro) por (Peso).
+// Función para formatear el monto con dos decimales y el símbolo del peso chileno.
     private fun formatAmount(value: Double): String {
-        return "%.2f€".format(value)
+        return "%.2f$".format(value)
     }
 }
 

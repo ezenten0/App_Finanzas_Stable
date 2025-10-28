@@ -75,7 +75,7 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
-private val budgetNumberFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "ES"))
+private val budgetNumberFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
 
 @Composable
 fun BudgetsRoute(
