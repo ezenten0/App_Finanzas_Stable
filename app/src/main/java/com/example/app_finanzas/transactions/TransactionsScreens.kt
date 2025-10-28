@@ -5,6 +5,7 @@ package com.example.app_finanzas.transactions
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +60,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val numberFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
@@ -71,22 +75,33 @@ fun TransactionsRoute(
     onAddTransaction: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val transactions by transactionRepository.observeTransactions().collectAsState(initial = emptyList())
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    TransactionsScreen(
-        transactions = transactions,
-        onTransactionSelected = onTransactionSelected,
-        onAddTransaction = onAddTransaction,
-        onDeleteTransaction = { transaction ->
-            scope.launch {
-                transactionRepository.deleteTransaction(transaction.id)
-                snackbarHostState.showSnackbar("Movimiento eliminado: ${transaction.title}")
-            }
-        },
-        snackbarHostState = snackbarHostState,
-        modifier = modifier
-    )
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        delay(2000L) // Ajusta para la "carga" de archivos.
+        isLoading = false
+    }
+
+    if (isLoading) {
+        LoadingScreen()
+    } else {
+        val transactions by transactionRepository.observeTransactions().collectAsState(initial = emptyList())
+        val snackbarHostState = remember { SnackbarHostState() }
+        val scope = rememberCoroutineScope()
+        TransactionsScreen(
+            transactions = transactions,
+            onTransactionSelected = onTransactionSelected,
+            onAddTransaction = onAddTransaction,
+            onDeleteTransaction = { transaction ->
+                scope.launch {
+                    transactionRepository.deleteTransaction(transaction.id)
+                    snackbarHostState.showSnackbar("Movimiento eliminado: ${transaction.title}")
+                }
+            },
+            snackbarHostState = snackbarHostState,
+            modifier = modifier
+        )
+    }
 }
 
 /**
