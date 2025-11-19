@@ -2,44 +2,60 @@ package com.example.app_finanzas.home.analytics
 
 import com.example.app_finanzas.home.model.Transaction
 import com.example.app_finanzas.home.model.TransactionType
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.maps.shouldContainExactly
+import io.kotest.matchers.shouldBe
+import java.time.LocalDate
 
-/**
- * Verifies the aggregation helpers that drive the home, statistics and budgets
- * screens.
- */
-class TransactionAnalyticsTest {
 
-    private val sampleTransactions = listOf(
-        Transaction(1, "Ingreso", "Salario", 1000.0, TransactionType.INCOME, "Salario", "2024-10-01"),
-        Transaction(2, "Cine", "Salida", 50.0, TransactionType.EXPENSE, "Entretenimiento", "2024-10-02"),
-        Transaction(3, "Cena", "Restaurante", 40.0, TransactionType.EXPENSE, "Social", "2024-10-03")
+class TransactionAnalyticsTest : StringSpec({
+    val baseTransactions = listOf(
+        Transaction(id = 1, title = "Salario", description = "Pago mensual", amount = 1500.0, type = TransactionType.INCOME, category = "Trabajo", date = "2024-10-01"),
+        Transaction(id = 2, title = "Alquiler", description = "Depto", amount = 700.0, type = TransactionType.EXPENSE, category = "Hogar", date = "2024-10-02"),
+        Transaction(id = 3, title = "Supermercado", description = "Compras", amount = 200.0, type = TransactionType.EXPENSE, category = "Alimentos", date = "2024-10-02"),
+        Transaction(id = 4, title = "Venta", description = "Garage", amount = 250.0, type = TransactionType.INCOME, category = "Otros", date = "2024-10-03")
     )
 
-    @Test
-    fun `balance summary aggregates income and expenses`() {
-        val summary = TransactionAnalytics.calculateBalanceSummary(sampleTransactions)
-        assertEquals(1000.0, summary.totalIncome, 0.001)
-        assertEquals(90.0, summary.totalExpense, 0.001)
-        assertEquals(910.0, summary.totalBalance, 0.001)
+    "calculateBalanceSummary aggregates totals" {
+        val summary = TransactionAnalytics.calculateBalanceSummary(baseTransactions)
+
+        summary.totalIncome shouldBe 1750.0
+        summary.totalExpense shouldBe 900.0
+        summary.totalBalance shouldBe 850.0
     }
 
-    @Test
-    fun `expenses group by category`() {
-        val expenses = TransactionAnalytics.calculateExpenseByCategory(sampleTransactions)
-        assertEquals(2, expenses.size)
-        assertEquals(50.0, expenses["Entretenimiento"], 0.001)
-        assertEquals(40.0, expenses["Social"], 0.001)
+    "calculateExpenseByCategory groups expenses" {
+        val expenses = TransactionAnalytics.calculateExpenseByCategory(baseTransactions)
+
+        expenses.shouldContainExactly(
+            mapOf(
+                "Hogar" to 700.0,
+                "Alimentos" to 200.0
+            )
+        )
     }
 
-    @Test
-    fun `budget progress calculates percentages`() {
-        val budget = mapOf("Entretenimiento" to 100.0, "Social" to 80.0)
-        val progress = TransactionAnalytics.calculateBudgetProgress(sampleTransactions, budget)
-        val entertainment = progress.first { it.category == "Entretenimiento" }
-        val social = progress.first { it.category == "Social" }
-        assertEquals(0.5, entertainment.progress, 0.001)
-        assertEquals(0.5, social.progress, 0.001)
+    "calculateBudgetProgress clamps percentages" {
+        val budgets = mapOf("Hogar" to 800.0, "Alimentos" to 150.0)
+
+        val progress = TransactionAnalytics.calculateBudgetProgress(baseTransactions, budgets)
+
+        progress.shouldContainExactly(
+            listOf(
+                BudgetProgress(category = "Hogar", spent = 700.0, limit = 800.0, progress = 0.875),
+                BudgetProgress(category = "Alimentos", spent = 200.0, limit = 150.0, progress = 1.0)
+            )
+        )
     }
-}
+
+    "calculateTimeSeries respects time range" {
+        val now = LocalDate.of(2024, 10, 5)
+        val points = TransactionAnalytics.calculateTimeSeries(baseTransactions, StatisticsRange.LAST_7_DAYS, now)
+
+        points.size shouldBe 7
+        points.first().date shouldBe now.minusDays(6)
+        points.last().income shouldBe 0.0
+        points.last().expense shouldBe 0.0
+    }
+})

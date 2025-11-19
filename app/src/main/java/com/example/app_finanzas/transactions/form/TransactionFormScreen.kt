@@ -49,7 +49,6 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -76,12 +75,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.app_finanzas.data.transaction.TransactionRepository
 import com.example.app_finanzas.home.model.TransactionType
+import com.example.app_finanzas.ui.components.FinanceTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import com.example.app_finanzas.ui.icons.CategoryIconByLabel
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -232,9 +232,10 @@ fun TransactionFormScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+                val saveEnabled = state.canSave && !state.isSaving
                 Button(
                     onClick = onSave,
-                    enabled = !state.isSaving,
+                    enabled = saveEnabled,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp)
                 ) {
@@ -299,44 +300,51 @@ fun TransactionFormScreen(
                 }
             }
 
-            OutlinedTextField(
+            FinanceTextField(
                 value = state.title,
                 onValueChange = onTitleChange,
-                label = { Text(text = "Título") },
+                label = "Título",
                 leadingIcon = { Icon(imageVector = Icons.Rounded.Payments, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                supportingText = state.titleError,
+                isError = state.titleError != null
             )
 
-            OutlinedTextField(
+            FinanceTextField(
                 value = state.description,
                 onValueChange = onDescriptionChange,
-                label = { Text(text = "Descripción") },
-                modifier = Modifier.fillMaxWidth()
+                label = "Descripción",
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = false,
+                minLines = 2
             )
 
-            OutlinedTextField(
+            FinanceTextField(
                 value = state.amount,
                 onValueChange = onAmountChange,
-                label = { Text(text = "Monto") },
+                label = "Monto",
                 leadingIcon = { Icon(imageVector = Icons.Rounded.CheckCircle, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = state.amountError,
+                isError = state.amountError != null
             )
 
             var categoryMenuExpanded by remember { mutableStateOf(false) }
             val dropdownCategories = state.availableCategories.ifEmpty { emptyList() }
 
             Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
+                val categorySupportingText = state.categoryError
+                    ?: "Selecciona una categoría o escribe una nueva"
+                FinanceTextField(
                     value = state.category,
                     onValueChange = {
                         onCategoryChange(it)
                         categoryMenuExpanded = true
                     },
-                    label = { Text(text = "Categoría") },
-                    placeholder = { Text(text = "Ej. Hogar") },
+                    label = "Categoría",
+                    placeholder = "Ej. Hogar",
                     leadingIcon = {
                         val resolvedLabel = if (state.category.isBlank()) "Otros" else state.category
                         CategoryIconByLabel(
@@ -350,10 +358,8 @@ fun TransactionFormScreen(
                             Icon(imageVector = icon, contentDescription = null)
                         }
                     },
-                    supportingText = {
-                        Text(text = "Selecciona una categoría o escribe una nueva")
-                    },
-                    singleLine = true,
+                    supportingText = categorySupportingText,
+                    isError = state.categoryError != null,
                     modifier = Modifier.fillMaxWidth()
                 )
 
