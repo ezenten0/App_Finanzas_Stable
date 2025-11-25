@@ -86,6 +86,9 @@ Los interceptores HTTP (`FinanceHttp`) ahora registran la duración de cada requ
    - Un smoke test automatizado (`InsightControllerTest`) simula la API externa y verifica que `/api/v1/insights` devuelva tanto tasas FX como casos de riesgo locales.
    - Finalmente, genera el APK release y prueba la instalación para asegurar que la firma y la configuración de red funcionan en un entorno limpio.
 
+**Microservicios/Docs**
+Consultar : [`docs/microservices/SPRING_BOOT_ENDPOINTS.md`](docs/microservices/SPRING_BOOT_ENDPOINTS.md)
+
 ## Próximos pasos sugeridos
 
 - Integrar almacenamiento persistente para las transacciones (Room o DataStore).
