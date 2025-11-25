@@ -49,8 +49,8 @@ La documentación OpenAPI se publica en `/swagger-ui.html` gracias a `springdoc-
   ```
   
 ## Scripts Transactions:
-```{
-"title": "Sueldo mensual",
+```
+{"title": "Sueldo mensual",
 "type": "CREDIT",
 "amount": 850000,
 "description": "Depósito de sueldo correspondiente al mes",
