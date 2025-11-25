@@ -60,7 +60,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
-import kotlinx.coroutines.delay
+import com.example.app_finanzas.transactions.loading.simulateTransactionLoading
 import kotlinx.coroutines.launch
 
 private val numberFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
@@ -78,7 +78,7 @@ fun TransactionsRoute(
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        delay(2000L) // Ajusta para la "carga" de archivos.
+        simulateTransactionLoading()
         isLoading = false
     }
 

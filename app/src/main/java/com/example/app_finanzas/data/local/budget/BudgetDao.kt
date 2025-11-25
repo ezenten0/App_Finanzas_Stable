@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.example.app_finanzas.data.sync.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -34,9 +35,18 @@ interface BudgetDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBudget(budget: BudgetEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertBudgets(budgets: List<BudgetEntity>)
+
     /**
      * Removes the selected budget from disk.
      */
     @Query("DELETE FROM budgets WHERE id = :budgetId")
     suspend fun deleteBudget(budgetId: Int)
+
+    @Query("SELECT * FROM budgets WHERE syncStatus != :syncedStatus")
+    suspend fun getPendingBudgets(syncedStatus: SyncStatus = SyncStatus.SYNCED): List<BudgetEntity>
+
+    @Query("UPDATE budgets SET syncStatus = :status WHERE id = :budgetId")
+    suspend fun updateSyncStatus(budgetId: Int, status: SyncStatus)
 }

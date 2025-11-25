@@ -40,7 +40,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -71,6 +70,7 @@ import com.example.app_finanzas.home.analytics.BudgetProgress
 import com.example.app_finanzas.categories.CategoryDefinitions
 import com.example.app_finanzas.ui.icons.CategoryIcon
 import com.example.app_finanzas.ui.icons.CategoryIconRegistry
+import com.example.app_finanzas.ui.components.FinanceTextField
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -339,16 +339,33 @@ private fun BudgetEditorDialog(
     var iconKey by rememberSaveable(goal.id, goal.iconKey) {
         mutableStateOf(goal.iconKey.ifBlank { CategoryDefinitions.OTHERS })
     }
+    var categoryError by rememberSaveable(goal.id, goal.category) { mutableStateOf<String?>(null) }
+    var limitError by rememberSaveable(goal.id, goal.limit) { mutableStateOf<String?>(null) }
     val isEditing = goal.id != 0
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = {
-                val parsedLimit = limit.replace(",", ".").toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0
-                if (category.isNotBlank() && parsedLimit > 0.0) {
+                val trimmedCategory = category.trim()
+                val parsedLimit = limit.replace(",", ".").toDoubleOrNull()
+                val normalizedLimit = parsedLimit?.takeIf { it > 0.0 }
+
+                categoryError = if (trimmedCategory.length < 3) {
+                    "Define una categoría de al menos 3 caracteres."
+                } else {
+                    null
+                }
+
+                limitError = if (normalizedLimit == null) {
+                    "Configura un límite mayor a cero."
+                } else {
+                    null
+                }
+
+                if (categoryError == null && limitError == null) {
                     val normalizedIconKey = iconKey.ifBlank { CategoryDefinitions.OTHERS }
-                    onConfirm(goal.copy(category = category.trim(), limit = parsedLimit, iconKey = normalizedIconKey))
+                    onConfirm(goal.copy(category = trimmedCategory, limit = normalizedLimit!!, iconKey = normalizedIconKey))
                 }
             }) {
                 Text(text = if (isEditing) "Actualizar" else "Guardar")
@@ -366,20 +383,29 @@ private fun BudgetEditorDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
+                FinanceTextField(
                     value = category,
                     onValueChange = {
                         category = it
+                        categoryError = null
                         CategoryDefinitions.keyForLabel(it)?.let { key -> iconKey = key }
                     },
-                    label = { Text(text = "Categoría") },
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = limit,
-                    onValueChange = { limit = it },
-                    label = { Text(text = "Límite mensual") },
+                    label = "Categoría",
                     singleLine = true,
+                    supportingText = categoryError,
+                    isError = categoryError != null
+                )
+                val limitSupportingText = limitError ?: "Ingresa el límite mensual en la moneda base"
+                FinanceTextField(
+                    value = limit,
+                    onValueChange = {
+                        limit = it
+                        limitError = null
+                    },
+                    label = "Límite mensual",
+                    singleLine = true,
+                    supportingText = limitSupportingText,
+                    isError = limitError != null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 Text(

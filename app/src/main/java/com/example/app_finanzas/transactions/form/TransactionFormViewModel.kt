@@ -35,12 +35,22 @@ class TransactionFormViewModel(
     )
     val uiState: StateFlow<TransactionFormUiState> = _uiState
 
+    private fun reduceState(transform: (TransactionFormUiState) -> TransactionFormUiState) {
+        _uiState.update { transform(it).recalculateCanSave() }
+    }
+
+    private fun TransactionFormUiState.recalculateCanSave(): TransactionFormUiState {
+        val amountValue = amount.toDoubleOrNull()
+        val canSave = title.isNotBlank() && amountValue != null && amountValue > 0.0 && category.isNotBlank()
+        return copy(canSave = canSave)
+    }
+
     init {
         observeCategories()
         if (transactionId != null) {
             loadTransaction(transactionId)
         } else {
-            _uiState.update { it.copy(date = LocalDate.now()) }
+            reduceState { it.copy(date = LocalDate.now()) }
         }
     }
 
@@ -48,7 +58,7 @@ class TransactionFormViewModel(
         viewModelScope.launch {
             repository.observeCategories().collect { storedCategories ->
                 val merged = CategoryDefinitions.mergedLabels(storedCategories)
-                _uiState.update { it.copy(availableCategories = merged) }
+                _uiState.update { it.copy(availableCategories = merged).recalculateCanSave() }
             }
         }
     }
@@ -57,7 +67,7 @@ class TransactionFormViewModel(
         viewModelScope.launch {
             val transaction = repository.getTransactionById(id)
             if (transaction != null) {
-                _uiState.update {
+                reduceState {
                     it.copy(
                         transactionId = transaction.id,
                         title = transaction.title,
@@ -70,58 +80,84 @@ class TransactionFormViewModel(
                     )
                 }
             } else {
-                _uiState.update { it.copy(errorMessage = "No se encontró el movimiento a editar") }
+                reduceState { it.copy(errorMessage = "No se encontró el movimiento a editar") }
             }
         }
     }
 
     fun onTitleChange(value: String) {
-        _uiState.update { it.copy(title = value) }
+        reduceState { it.copy(title = value, titleError = null, errorMessage = null) }
     }
 
     fun onDescriptionChange(value: String) {
-        _uiState.update { it.copy(description = value) }
+        reduceState { it.copy(description = value) }
     }
 
     fun onAmountChange(value: String) {
         val normalized = value.replace(",", ".")
-        _uiState.update { it.copy(amount = normalized) }
+        reduceState { it.copy(amount = normalized, amountError = null, errorMessage = null) }
     }
 
     fun onCategoryChange(value: String) {
-        _uiState.update { it.copy(category = value) }
+        reduceState { it.copy(category = value, categoryError = null, errorMessage = null) }
     }
 
     fun onTypeChange(type: TransactionType) {
-        _uiState.update { it.copy(type = type) }
+        reduceState { it.copy(type = type) }
     }
 
     fun onDateSelected(date: LocalDate) {
-        _uiState.update { it.copy(date = date) }
+        reduceState { it.copy(date = date) }
     }
 
     fun consumeSuccessFlag() {
-        _uiState.update { it.copy(saveSucceeded = false) }
+        reduceState { it.copy(saveSucceeded = false) }
+    }
+
+    private fun validateFields(): Double? {
+        val state = _uiState.value
+        val trimmedTitle = state.title.trim()
+        val trimmedCategory = state.category.trim()
+        val amountValue = state.amount.toDoubleOrNull()
+
+        val titleError = if (trimmedTitle.length < 3) {
+            "Ingresa un título de al menos 3 caracteres."
+        } else {
+            null
+        }
+
+        val amountError = when {
+            amountValue == null -> "Ingresa un monto numérico válido."
+            amountValue <= 0.0 -> "El monto debe ser mayor a cero."
+            else -> null
+        }
+
+        val categoryError = if (trimmedCategory.isBlank()) {
+            "Selecciona o escribe una categoría."
+        } else {
+            null
+        }
+
+        val updated = state.copy(
+            titleError = titleError,
+            amountError = amountError,
+            categoryError = categoryError
+        ).recalculateCanSave()
+        _uiState.value = updated
+
+        return if (titleError == null && amountError == null && categoryError == null) {
+            amountValue
+        } else {
+            null
+        }
     }
 
     fun saveTransaction() {
-        val state = _uiState.value
-        val amountValue = state.amount.toDoubleOrNull()
-        if (state.title.isBlank() || amountValue == null || amountValue <= 0) {
-            _uiState.update {
-                it.copy(errorMessage = "Completa el título y un monto válido.")
-            }
-            return
-        }
-        if (state.category.isBlank()) {
-            _uiState.update {
-                it.copy(errorMessage = "Elige una categoría para el movimiento.")
-            }
-            return
-        }
+        val amountValue = validateFields() ?: return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true, errorMessage = null) }
+            reduceState { it.copy(isSaving = true, errorMessage = null) }
+            val state = _uiState.value
             val transaction = Transaction(
                 id = state.transactionId ?: 0,
                 title = state.title.trim(),
@@ -131,15 +167,25 @@ class TransactionFormViewModel(
                 category = state.category.trim(),
                 date = state.date.format(formatter)
             )
-            val savedId = repository.upsertTransaction(transaction)
-            _uiState.update {
-                it.copy(
-                    transactionId = savedId,
-                    isSaving = false,
-                    saveSucceeded = true,
-                    isEditing = true
-                )
-            }
+            runCatching { repository.upsertTransaction(transaction) }
+                .onSuccess { savedId ->
+                    reduceState {
+                        it.copy(
+                            transactionId = savedId,
+                            isSaving = false,
+                            saveSucceeded = true,
+                            isEditing = true
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    reduceState {
+                        it.copy(
+                            isSaving = false,
+                            errorMessage = "Ocurrió un error al guardar: ${throwable.localizedMessage ?: "Inténtalo nuevamente"}"
+                        )
+                    }
+                }
         }
     }
 
@@ -171,5 +217,9 @@ data class TransactionFormUiState(
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val saveSucceeded: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val titleError: String? = null,
+    val amountError: String? = null,
+    val categoryError: String? = null,
+    val canSave: Boolean = false
 )

@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+release/signing.env
+
+# Release artifacts
+release/*.jks
+release/*.keystore
+release/*.apk

@@ -1,0 +1,8 @@
+CREATE TABLE risk_cases (
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    score INTEGER NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    reason VARCHAR(200) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);

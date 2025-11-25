@@ -47,9 +47,26 @@ object TransactionAnalytics {
         val expenses = calculateExpenseByCategory(transactions)
         return monthlyBudget.map { (category, limit) ->
             val used = expenses[category] ?: 0.0
-            val progress = if (limit == 0.0) 0.0 else (used / limit).coerceAtMost(1.0)
+            val progress = if (limit == 0.0) 0.0 else used / limit
             BudgetProgress(category = category, spent = used, limit = limit, progress = progress)
         }
+    }
+
+    /**
+     * Returns the transactions for the current month, falling back to the full
+     * list if parsing fails or no matching records exist.
+     */
+    fun currentMonthTransactions(
+        transactions: List<Transaction>,
+        referenceDate: LocalDate = LocalDate.now()
+    ): List<Transaction> {
+        val currentMonth = referenceDate.withDayOfMonth(1)
+        val groupedByMonth = transactions.groupBy { transaction ->
+            val parsed = runCatching { LocalDate.parse(transaction.date) }.getOrNull()
+            parsed?.withDayOfMonth(1) ?: currentMonth
+        }
+
+        return groupedByMonth[currentMonth] ?: transactions
     }
 
     fun calculateTimeSeries(

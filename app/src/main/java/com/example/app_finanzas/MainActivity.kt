@@ -13,9 +13,11 @@ import androidx.lifecycle.lifecycleScope
 import com.example.app_finanzas.data.local.AppDatabase
 import com.example.app_finanzas.data.budget.BudgetRepository
 import com.example.app_finanzas.data.transaction.TransactionRepository
+import com.example.app_finanzas.data.insights.InsightsRepository
 import com.example.app_finanzas.data.user.UserProfile
 import com.example.app_finanzas.navigation.FinanceApp
 import com.example.app_finanzas.ui.theme.App_FinanzasTheme
+import com.example.app_finanzas.network.NetworkModule
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -24,8 +26,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // Build the Room database and repository that feed every screen with persisted data.
         val database = AppDatabase.getInstance(applicationContext)
-        val transactionRepository = TransactionRepository(database.transactionDao())
-        val budgetRepository = BudgetRepository(database.budgetDao())
+        val financeApi = NetworkModule.provideFinanceServiceApi()
+        val transactionRepository = TransactionRepository(database.transactionDao(), financeApi)
+        val budgetRepository = BudgetRepository(
+            budgetDao = database.budgetDao(),
+            financeServiceApi = financeApi,
+            riskServiceApi = NetworkModule.provideRiskServiceApi()
+        )
+        val insightsRepository = InsightsRepository(NetworkModule.provideRiskServiceApi())
         lifecycleScope.launch { budgetRepository.ensureSeedData() }
         setContent {
             App_FinanzasTheme {
@@ -35,6 +43,7 @@ class MainActivity : ComponentActivity() {
                     FinanceApp(
                         transactionRepository = transactionRepository,
                         budgetRepository = budgetRepository,
+                        insightsRepository = insightsRepository,
                         userName = userName,
                         userEmail = userEmail
                     )

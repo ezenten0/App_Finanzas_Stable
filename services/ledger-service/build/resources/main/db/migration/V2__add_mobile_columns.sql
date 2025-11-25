@@ -1,0 +1,8 @@
+ALTER TABLE transactions
+    ADD COLUMN title VARCHAR(200) NOT NULL DEFAULT 'Sin titulo';
+
+ALTER TABLE transactions
+    ADD COLUMN category VARCHAR(120) NOT NULL DEFAULT 'General';
+
+ALTER TABLE transactions
+    ADD COLUMN event_date DATE NOT NULL DEFAULT CURRENT_DATE;

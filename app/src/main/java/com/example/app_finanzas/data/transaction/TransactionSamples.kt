@@ -1,6 +1,7 @@
 package com.example.app_finanzas.data.transaction
 
 import com.example.app_finanzas.data.local.transaction.TransactionEntity
+import com.example.app_finanzas.data.sync.SyncStatus
 import com.example.app_finanzas.home.model.TransactionType
 
 /**
@@ -22,7 +23,8 @@ object TransactionSamples {
                 amount = 1450.0,
                 type = TransactionTypeMapper.toStorage(TransactionType.INCOME),
                 category = "Salario",
-                date = "2024-10-05"
+                date = "2024-10-05",
+                syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 2,
@@ -31,7 +33,8 @@ object TransactionSamples {
                 amount = 210.5,
                 type = TransactionTypeMapper.toStorage(TransactionType.EXPENSE),
                 category = "Alimentos",
-                date = "2024-10-06"
+                date = "2024-10-06",
+                syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 3,
@@ -40,7 +43,8 @@ object TransactionSamples {
                 amount = 380.0,
                 type = TransactionTypeMapper.toStorage(TransactionType.INCOME),
                 category = "Freelance",
-                date = "2024-10-07"
+                date = "2024-10-07",
+                syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 4,
@@ -49,7 +53,8 @@ object TransactionSamples {
                 amount = 12.99,
                 type = TransactionTypeMapper.toStorage(TransactionType.EXPENSE),
                 category = "Entretenimiento",
-                date = "2024-10-08"
+                date = "2024-10-08",
+                syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 5,
@@ -58,7 +63,8 @@ object TransactionSamples {
                 amount = 48.25,
                 type = TransactionTypeMapper.toStorage(TransactionType.EXPENSE),
                 category = "Social",
-                date = "2024-10-08"
+                date = "2024-10-08",
+                syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 6,
@@ -67,7 +73,8 @@ object TransactionSamples {
                 amount = 25.75,
                 type = TransactionTypeMapper.toStorage(TransactionType.INCOME),
                 category = "Inversiones",
-                date = "2024-10-09"
+                date = "2024-10-09",
+                syncStatus = SyncStatus.SYNCED
             )
         )
     }
@@ -78,9 +85,30 @@ object TransactionSamples {
  * a user friendly representation in Compose.
  */
 object TransactionTypeMapper {
-    fun toStorage(type: TransactionType): String = type.name
+    private const val CREDIT = "CREDIT"
+    private const val DEBIT = "DEBIT"
 
-    fun fromStorage(value: String): TransactionType = runCatching {
-        TransactionType.valueOf(value)
-    }.getOrDefault(TransactionType.EXPENSE)
+    /**
+     * Converts a domain type into the canonical value expected by the backend
+     * (`CREDIT`/`DEBIT`). Legacy aliases from the database are normalized to
+     * avoid leaking UI wording to the API.
+     */
+    fun toStorage(type: TransactionType): String = when (type) {
+        TransactionType.INCOME -> CREDIT
+        TransactionType.EXPENSE -> DEBIT
+    }
+
+    /**
+     * Translates storage or network values into domain enums. Both the
+     * canonical API values (`CREDIT`/`DEBIT`) and the legacy domain names
+     * (`INCOME`/`EXPENSE`) are supported to keep backwards compatibility with
+     * existing data while honoring the contract expected by ledger-service.
+     */
+    fun fromStorage(value: String): TransactionType {
+        return when (value.uppercase()) {
+            CREDIT, TransactionType.INCOME.name -> TransactionType.INCOME
+            DEBIT, TransactionType.EXPENSE.name -> TransactionType.EXPENSE
+            else -> TransactionType.EXPENSE
+        }
+    }
 }

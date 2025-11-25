@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.notification.NotificationControllerTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-11-25T09:26:29.807Z" hostname="DESKTOP-3G1SSLR" time="0.573">
+  <properties/>
+  <testcase name="crea y consulta una notificación" classname="com.example.notification.NotificationControllerTest" time="0.573"/>
+  <system-out><![CDATA[06:26:25.355 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.notification.NotificationControllerTest]: NotificationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+06:26:25.447 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.notification.NotificationServiceApplication for test class com.example.notification.NotificationControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2025-11-25T06:26:25.825-03:00  INFO 29780 --- [notification-service] [    Test worker] c.e.n.NotificationControllerTest         : Starting NotificationControllerTest using Java 17.0.17 with PID 29780 (started by TeaDyDy in C:\Users\TeaDyDy\AndroidStudioProjects\app_finanzas\services\notification-service)
+2025-11-25T06:26:25.827-03:00  INFO 29780 --- [notification-service] [    Test worker] c.e.n.NotificationControllerTest         : No active profile set, falling back to 1 default profile: "dev"
+2025-11-25T06:26:26.528-03:00  INFO 29780 --- [notification-service] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-11-25T06:26:26.573-03:00  INFO 29780 --- [notification-service] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 36 ms. Found 1 JPA repository interface.
+2025-11-25T06:26:27.188-03:00  INFO 29780 --- [notification-service] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-11-25T06:26:27.346-03:00  INFO 29780 --- [notification-service] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:notification user=SA
+2025-11-25T06:26:27.347-03:00  INFO 29780 --- [notification-service] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-11-25T06:26:27.387-03:00  INFO 29780 --- [notification-service] [    Test worker] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:notification (H2 2.3)
+2025-11-25T06:26:27.393-03:00  WARN 29780 --- [notification-service] [    Test worker] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.3.232 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2025-11-25T06:26:27.412-03:00  INFO 29780 --- [notification-service] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2025-11-25T06:26:27.414-03:00  INFO 29780 --- [notification-service] [    Test worker] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.011s)
+2025-11-25T06:26:27.421-03:00  INFO 29780 --- [notification-service] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2025-11-25T06:26:27.463-03:00  INFO 29780 --- [notification-service] [    Test worker] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2025-11-25T06:26:27.471-03:00  INFO 29780 --- [notification-service] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - init"
+2025-11-25T06:26:27.492-03:00  INFO 29780 --- [notification-service] [    Test worker] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "PUBLIC", now at version v1 (execution time 00:00.006s)
+2025-11-25T06:26:27.591-03:00  INFO 29780 --- [notification-service] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-11-25T06:26:27.704-03:00  INFO 29780 --- [notification-service] [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2025-11-25T06:26:27.744-03:00  INFO 29780 --- [notification-service] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-11-25T06:26:27.992-03:00  INFO 29780 --- [notification-service] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-11-25T06:26:28.661-03:00  INFO 29780 --- [notification-service] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-11-25T06:26:28.674-03:00  INFO 29780 --- [notification-service] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-11-25T06:26:29.112-03:00  WARN 29780 --- [notification-service] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-11-25T06:26:29.713-03:00  INFO 29780 --- [notification-service] [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2025-11-25T06:26:29.713-03:00  INFO 29780 --- [notification-service] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2025-11-25T06:26:29.716-03:00  INFO 29780 --- [notification-service] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2025-11-25T06:26:29.761-03:00  INFO 29780 --- [notification-service] [    Test worker] c.e.n.NotificationControllerTest         : Started NotificationControllerTest in 4.176 seconds (process running for 5.197)
+Hibernate: 
+    insert 
+    into
+        notifications
+        (body, channel, created_at, recipient, status, subject, id) 
+    values
+        (?, ?, ?, ?, ?, ?, default)
+Hibernate: 
+    select
+        n1_0.id,
+        n1_0.body,
+        n1_0.channel,
+        n1_0.created_at,
+        n1_0.recipient,
+        n1_0.status,
+        n1_0.subject 
+    from
+        notifications n1_0 
+    where
+        n1_0.id=?
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

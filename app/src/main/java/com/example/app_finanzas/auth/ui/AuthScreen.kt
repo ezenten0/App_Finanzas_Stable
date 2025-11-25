@@ -206,7 +206,7 @@ private fun PasswordField(
         trailingIcon = {
             IconButton(onClick = { setVisible(!visible) }) {
                 Icon(
-                    imageVector = if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                    imageVector = if (visible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
                     contentDescription = if (visible) "Ocultar contraseña" else "Mostrar contraseña"
                 )
             }

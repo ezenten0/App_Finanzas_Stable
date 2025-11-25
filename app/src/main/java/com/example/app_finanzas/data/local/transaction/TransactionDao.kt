@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.example.app_finanzas.data.sync.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -45,6 +46,12 @@ interface TransactionDao {
 
     @Query("DELETE FROM transactions WHERE id = :transactionId")
     suspend fun deleteTransaction(transactionId: Int)
+
+    @Query("SELECT * FROM transactions WHERE syncStatus != :syncedStatus")
+    suspend fun getPendingTransactions(syncedStatus: SyncStatus = SyncStatus.SYNCED): List<TransactionEntity>
+
+    @Query("UPDATE transactions SET syncStatus = :status WHERE id = :transactionId")
+    suspend fun updateSyncStatus(transactionId: Int, status: SyncStatus)
 
     @Query("SELECT DISTINCT category FROM transactions ORDER BY category ASC")
     fun observeCategories(): Flow<List<String>>

@@ -50,12 +50,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.example.app_finanzas.data.budget.BudgetRepository
 import com.example.app_finanzas.data.transaction.TransactionRepository
 import com.example.app_finanzas.home.model.HomeUiState
 import com.example.app_finanzas.home.model.Transaction
 import com.example.app_finanzas.home.model.TransactionType
 import com.example.app_finanzas.ui.icons.CategoryIconByLabel
 import com.example.app_finanzas.ui.theme.App_FinanzasTheme
+import com.example.app_finanzas.data.insights.InsightsRepository
+import com.example.app_finanzas.insights.InsightsUiState
+import com.example.app_finanzas.insights.InsightsViewModel
+import com.example.app_finanzas.insights.InsightsViewModelFactory
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -75,15 +81,21 @@ fun HomeRoute(
     userName: String,
     userEmail: String,
     transactionRepository: TransactionRepository,
+    budgetRepository: BudgetRepository,
+    insightsRepository: InsightsRepository,
     onAddTransaction: () -> Unit,
     onTransactionSelected: (Int) -> Unit,
     onShowInsights: () -> Unit,
     onShowStatistics: () -> Unit,
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(transactionRepository)
+    ),
+    insightsViewModel: InsightsViewModel = viewModel(
+        factory = InsightsViewModelFactory(transactionRepository, budgetRepository, insightsRepository)
     )
 ) {
     val state by viewModel.uiState
+    val insightsState by insightsViewModel.uiState.collectAsState()
     LaunchedEffect(userName, userEmail) {
         viewModel.updateUserProfile(userName, userEmail)
     }
@@ -92,7 +104,9 @@ fun HomeRoute(
         onTransactionSelected = onTransactionSelected,
         onAddTransaction = onAddTransaction,
         onShowInsights = onShowInsights,
-        onShowStatistics = onShowStatistics
+        onShowStatistics = onShowStatistics,
+        insightsState = insightsState,
+        onRefreshInsights = { insightsViewModel.refreshInsights(forceRefresh = true) }
     )
 }
 
@@ -108,7 +122,9 @@ fun HomeScreen(
     onTransactionSelected: (Int) -> Unit = {},
     onAddTransaction: () -> Unit = {},
     onShowInsights: () -> Unit = {},
-    onShowStatistics: () -> Unit = {}
+    onShowStatistics: () -> Unit = {},
+    insightsState: InsightsUiState = InsightsUiState(),
+    onRefreshInsights: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -134,6 +150,13 @@ fun HomeScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            item {
+                InsightsPreviewCard(
+                    state = insightsState,
+                    onShowInsights = onShowInsights,
+                    onRefresh = onRefreshInsights
+                )
+            }
             item {
                 BalanceSummaryCard(
                     totalBalance = state.totalBalance,
@@ -200,6 +223,89 @@ private fun HomeTopBar(
             scrolledContainerColor = MaterialTheme.colorScheme.background
         )
     )
+}
+
+@Composable
+private fun InsightsPreviewCard(
+    state: InsightsUiState,
+    onShowInsights: () -> Unit,
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Alertas del centro de insights",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (state.isOffline) {
+                        Text(
+                            text = "Mostrando datos locales",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                IconButton(onClick = onRefresh) {
+                    Icon(imageVector = Icons.Rounded.Notifications, contentDescription = "Actualizar insights")
+                }
+            }
+            if (state.isLoading) {
+                Text(
+                    text = "Sincronizando insights...",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else if (state.insights.isNotEmpty()) {
+                val primary = state.insights.first()
+                Text(
+                    text = primary.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = primary.message,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                Text(
+                    text = "Sin recomendaciones disponibles.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (!state.isLoading && state.errorMessage != null) {
+                Text(
+                    text = state.errorMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Text(
+                    text = "Ver todas",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.clickable(onClick = onShowInsights)
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -491,6 +597,17 @@ private fun HomeScreenPreview() {
                         type = TransactionType.EXPENSE,
                         category = "Alimentos",
                         date = "2024-10-06"
+                    )
+                )
+            ),
+            insightsState = InsightsUiState(
+                isLoading = false,
+                insights = listOf(
+                    com.example.app_finanzas.home.analytics.FinancialInsight(
+                        id = "preview",
+                        title = "Controla tus gastos de comida",
+                        message = "Has usado el 80% del presupuesto en alimentos.",
+                        category = com.example.app_finanzas.home.analytics.InsightCategory.BUDGET
                     )
                 )
             )

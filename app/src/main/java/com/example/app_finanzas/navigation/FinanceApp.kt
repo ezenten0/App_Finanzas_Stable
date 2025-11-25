@@ -28,6 +28,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import androidx.navigation.navDeepLink
 import com.example.app_finanzas.data.budget.BudgetRepository
 import com.example.app_finanzas.data.transaction.TransactionRepository
 import com.example.app_finanzas.home.HomeRoute
@@ -37,9 +38,12 @@ import com.example.app_finanzas.statistics.StatisticsRoute
 import com.example.app_finanzas.budgets.BudgetsRoute
 import com.example.app_finanzas.transactions.form.TransactionFormRoute
 import com.example.app_finanzas.insights.InsightsRoute
+import com.example.app_finanzas.data.insights.InsightsRepository
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
+
+private const val FINANCE_APP_DEEPLINK_BASE = "financeapp://finanzas"
 
 /**
  * Hosts the animated navigation graph, bottom bar and screen wiring for the
@@ -50,6 +54,7 @@ import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 fun FinanceApp(
     transactionRepository: TransactionRepository,
     budgetRepository: BudgetRepository,
+    insightsRepository: InsightsRepository,
     userName: String,
     userEmail: String,
     modifier: Modifier = Modifier
@@ -97,11 +102,16 @@ fun FinanceApp(
                 ) + fadeOut(animationSpec = tween(300))
             }
         ) {
-            composable(FinanceDestination.Home.route) {
+            composable(
+                route = FinanceDestination.Home.route,
+                deepLinks = FinanceDestination.Home.deepLinks()
+            ) {
                 HomeRoute(
                     userName = userName,
                     userEmail = userEmail,
                     transactionRepository = transactionRepository,
+                    budgetRepository = budgetRepository,
+                    insightsRepository = insightsRepository,
                     onAddTransaction = {
                         navController.navigate(FinanceDestination.TransactionForm.route)
                     },
@@ -116,7 +126,10 @@ fun FinanceApp(
                     }
                 )
             }
-            composable(FinanceDestination.Transactions.route) {
+            composable(
+                route = FinanceDestination.Transactions.route,
+                deepLinks = FinanceDestination.Transactions.deepLinks()
+            ) {
                 TransactionsRoute(
                     transactionRepository = transactionRepository,
                     onTransactionSelected = { id ->
@@ -127,17 +140,29 @@ fun FinanceApp(
                     }
                 )
             }
-            composable(FinanceDestination.Statistics.route) {
+            composable(
+                route = FinanceDestination.Statistics.route,
+                deepLinks = FinanceDestination.Statistics.deepLinks()
+            ) {
                 StatisticsRoute(transactionRepository = transactionRepository)
             }
-            composable(FinanceDestination.Budgets.route) {
+            composable(
+                route = FinanceDestination.Budgets.route,
+                deepLinks = FinanceDestination.Budgets.deepLinks()
+            ) {
                 BudgetsRoute(
                     transactionRepository = transactionRepository,
                     budgetRepository = budgetRepository
                 )
             }
-            composable(FinanceDestination.TransactionDetail.route) { backStackEntry ->
-                val transactionId = backStackEntry.arguments?.getString(FinanceDestination.TransactionDetail.transactionIdArg)?.toIntOrNull()
+            composable(
+                route = FinanceDestination.TransactionDetail.route,
+                arguments = listOf(
+                    navArgument(FinanceDestination.TransactionDetail.transactionIdArg) { type = NavType.IntType }
+                ),
+                deepLinks = FinanceDestination.TransactionDetail.deepLinks()
+            ) { backStackEntry ->
+                val transactionId = backStackEntry.arguments?.getInt(FinanceDestination.TransactionDetail.transactionIdArg)
                 TransactionDetailRoute(
                     transactionRepository = transactionRepository,
                     transactionId = transactionId,
@@ -147,7 +172,10 @@ fun FinanceApp(
                     }
                 )
             }
-            composable(FinanceDestination.TransactionForm.route) {
+            composable(
+                route = FinanceDestination.TransactionForm.route,
+                deepLinks = FinanceDestination.TransactionForm.deepLinks()
+            ) {
                 TransactionFormRoute(
                     transactionRepository = transactionRepository,
                     transactionId = null,
@@ -156,7 +184,8 @@ fun FinanceApp(
             }
             composable(
                 route = FinanceDestination.TransactionForm.editRoute,
-                arguments = listOf(navArgument(FinanceDestination.TransactionForm.transactionIdArg) { type = NavType.IntType })
+                arguments = listOf(navArgument(FinanceDestination.TransactionForm.transactionIdArg) { type = NavType.IntType }),
+                deepLinks = listOf(navDeepLink { uriPattern = FinanceDestination.TransactionForm.editDeepLink })
             ) { backStackEntry ->
                 val transactionId = backStackEntry.arguments?.getInt(FinanceDestination.TransactionForm.transactionIdArg)
                 TransactionFormRoute(
@@ -165,10 +194,14 @@ fun FinanceApp(
                     onDismiss = { navController.popBackStack() }
                 )
             }
-            composable(FinanceDestination.Insights.route) {
+            composable(
+                route = FinanceDestination.Insights.route,
+                deepLinks = FinanceDestination.Insights.deepLinks()
+            ) {
                 InsightsRoute(
                     transactionRepository = transactionRepository,
                     budgetRepository = budgetRepository,
+                    insightsRepository = insightsRepository,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -221,25 +254,47 @@ sealed class FinanceDestination(
     val label: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
-    object Home : FinanceDestination("home", "Inicio", Icons.Rounded.Home)
-    object Transactions : FinanceDestination("transactions", "Movimientos", Icons.Rounded.AccountBalanceWallet)
-    object Statistics : FinanceDestination("statistics", "Estadísticas", Icons.Rounded.Assessment)
-    object Budgets : FinanceDestination("budgets", "Presupuestos", Icons.Rounded.BarChart)
+    open val deepLink: String? = null
+
+    object Home : FinanceDestination("home", "Inicio", Icons.Rounded.Home) {
+        override val deepLink = "$FINANCE_APP_DEEPLINK_BASE/home"
+    }
+
+    object Transactions : FinanceDestination("transactions", "Movimientos", Icons.Rounded.AccountBalanceWallet) {
+        override val deepLink = "$FINANCE_APP_DEEPLINK_BASE/transactions"
+    }
+
+    object Statistics : FinanceDestination("statistics", "Estadísticas", Icons.Rounded.Assessment) {
+        override val deepLink = "$FINANCE_APP_DEEPLINK_BASE/statistics"
+    }
+
+    object Budgets : FinanceDestination("budgets", "Presupuestos", Icons.Rounded.BarChart) {
+        override val deepLink = "$FINANCE_APP_DEEPLINK_BASE/budgets"
+    }
 
     object TransactionDetail : FinanceDestination("transactionDetail/{transactionId}", "Detalle", Icons.Rounded.AccountBalanceWallet) {
-        const val transactionIdArg = "TRANSACTION_ID"
+        const val transactionIdArg = "transactionId"
+        override val deepLink = "$FINANCE_APP_DEEPLINK_BASE/transactions/{$transactionIdArg}"
         fun createRoute(id: Int): String = "transactionDetail/$id"
     }
 
     object TransactionForm : FinanceDestination("transactionForm", "Registrar", Icons.Rounded.EditNote) {
         const val transactionIdArg = "transactionId"
         val editRoute: String = "transactionForm/{$transactionIdArg}"
+        override val deepLink = "$FINANCE_APP_DEEPLINK_BASE/transactions/new"
+        val editDeepLink: String = "$FINANCE_APP_DEEPLINK_BASE/transactions/{$transactionIdArg}/edit"
         fun createRoute(id: Int? = null): String = id?.let { "transactionForm/$it" } ?: route
     }
 
-    object Insights : FinanceDestination("insights", "Insights", Icons.Rounded.Lightbulb)
+    object Insights : FinanceDestination("insights", "Insights", Icons.Rounded.Lightbulb) {
+        override val deepLink = "$FINANCE_APP_DEEPLINK_BASE/insights"
+    }
 
     companion object {
         val bottomDestinations = listOf(Home, Transactions, Statistics, Budgets)
     }
 }
+
+private fun FinanceDestination.deepLinks() = deepLink?.let { pattern ->
+    listOf(navDeepLink { uriPattern = pattern })
+} ?: emptyList()

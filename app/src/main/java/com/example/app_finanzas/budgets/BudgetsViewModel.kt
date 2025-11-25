@@ -11,6 +11,8 @@ import com.example.app_finanzas.home.analytics.TransactionAnalytics
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 /**
@@ -31,22 +33,21 @@ class BudgetsViewModel(
     }
 
     private fun observeBudgets() {
-        viewModelScope.launch {
-            combine(
-                budgetRepository.observeBudgets(),
-                transactionRepository.observeTransactions()
-            ) { budgets, transactions ->
-                val budgetMap = budgets.associate { it.category to it.limit }
-                val progress = TransactionAnalytics.calculateBudgetProgress(transactions, budgetMap)
-                BudgetsUiState(
-                    goals = budgets,
-                    progress = progress,
-                    isLoading = false
-                )
-            }.collect { state ->
-                _uiState.value = state
-            }
-        }
+        combine(
+            budgetRepository.observeBudgets(),
+            transactionRepository.observeTransactions()
+        ) { budgets, transactions ->
+            val budgetMap = budgets.associate { it.category to it.limit }
+            val progress = TransactionAnalytics.calculateBudgetProgress(transactions, budgetMap)
+            BudgetsUiState(
+                goals = budgets,
+                progress = progress,
+                isLoading = false
+            )
+        }.onEach { state ->
+            _uiState.value = state
+            budgetRepository.trackBudgetAlerts(state.progress)
+        }.launchIn(viewModelScope)
     }
 
     private fun seedDefaults() {

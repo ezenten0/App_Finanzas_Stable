@@ -2,6 +2,7 @@ package com.example.app_finanzas.data.local.transaction
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.app_finanzas.data.sync.SyncStatus
 
 /**
  * Room entity that persists each financial transaction the user records or imports.
@@ -17,5 +18,6 @@ data class TransactionEntity(
     val amount: Double,
     val type: String,
     val category: String,
-    val date: String
+    val date: String,
+    val syncStatus: SyncStatus = SyncStatus.SYNCED
 )

@@ -2,6 +2,7 @@ package com.example.app_finanzas.data.local.budget
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.app_finanzas.data.sync.SyncStatus
 
 /**
  * Persists a configurable budget goal per category so every user can tailor
@@ -13,5 +14,6 @@ data class BudgetEntity(
     val id: Int = 0,
     val category: String,
     val limit: Double,
-    val iconKey: String
+    val iconKey: String,
+    val syncStatus: SyncStatus = SyncStatus.SYNCED
 )

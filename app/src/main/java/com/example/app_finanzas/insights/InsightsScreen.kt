@@ -30,6 +30,8 @@ import androidx.compose.material.icons.rounded.TrendingDown
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,7 +43,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -51,23 +52,26 @@ import com.example.app_finanzas.data.budget.BudgetRepository
 import com.example.app_finanzas.data.transaction.TransactionRepository
 import com.example.app_finanzas.home.analytics.FinancialInsight
 import com.example.app_finanzas.home.analytics.InsightCategory
-import com.example.app_finanzas.home.analytics.InsightGenerator
+import com.example.app_finanzas.data.insights.InsightsRepository
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun InsightsRoute(
     transactionRepository: TransactionRepository,
     budgetRepository: BudgetRepository,
+    insightsRepository: InsightsRepository,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val transactions by transactionRepository.observeTransactions().collectAsState(initial = emptyList())
-    val budgets by budgetRepository.observeBudgets().collectAsState(initial = emptyList())
-    val insights = remember(transactions, budgets) { InsightGenerator.buildInsights(transactions, budgets) }
+    val viewModel: InsightsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = InsightsViewModelFactory(transactionRepository, budgetRepository, insightsRepository)
+    )
+    val state by viewModel.uiState.collectAsState()
 
     InsightsScreen(
-        insights = insights,
+        state = state,
         onBack = onBack,
+        onRetry = { viewModel.refreshInsights(forceRefresh = true) },
         modifier = modifier
     )
 }
@@ -76,8 +80,9 @@ fun InsightsRoute(
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun InsightsScreen(
-    insights: List<FinancialInsight>,
+    state: InsightsUiState,
     onBack: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -116,10 +121,21 @@ fun InsightsScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (insights.isEmpty()) {
+            if (state.isOffline && state.insights.isNotEmpty()) {
+                item { OfflineInsightsBanner() }
+            }
+            if (state.isLoading) {
+                item { LoadingInsightsState() }
+            }
+            state.errorMessage?.let { message ->
+                item {
+                    InsightsErrorState(message = message, onRetry = onRetry)
+                }
+            }
+            if (state.insights.isEmpty() && !state.isLoading && state.errorMessage == null) {
                 item { EmptyInsightsState() }
             } else {
-                items(insights, key = { it.id }) { insight ->
+                items(state.insights, key = { it.id }) { insight ->
                     InsightCard(insight = insight)
                 }
             }
@@ -227,6 +243,99 @@ private fun EmptyInsightsState() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
+        }
+    }
+}
+
+@Composable
+private fun LoadingInsightsState() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator()
+            Column {
+                Text(
+                    text = "Sincronizando tus insights",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Consultando el servicio de riesgo...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OfflineInsightsBanner() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "Modo sin conexión",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            Text(
+                text = "Mostramos la última recomendación guardada mientras recuperamos la señal.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+}
+
+@Composable
+private fun InsightsErrorState(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "No pudimos actualizar los insights",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            ElevatedButton(onClick = onRetry) {
+                Text(text = "Reintentar")
+            }
         }
     }
 }
