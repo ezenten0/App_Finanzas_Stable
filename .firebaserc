@@ -1,0 +1,11 @@
+{
+  "projects": {
+    "default": "finanzas-app-38337"
+  },
+  "targets": {},
+  "etags": {
+    "finanzas-app-38337": {
+      "extensionInstances": {}
+    }
+  }
+}

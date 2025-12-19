@@ -1,5 +1,7 @@
 package com.example.app_finanzas.auth
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,6 +16,10 @@ fun AuthRoute(
     viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(LocalContext.current))
 ) {
     val state by viewModel.uiState
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+        onResult = { result -> viewModel.onGoogleSignInResult(result.data) }
+    )
 
     LaunchedEffect(state.authenticatedUser) {
         state.authenticatedUser?.let { profile ->
@@ -29,6 +35,12 @@ fun AuthRoute(
         onPasswordChanged = viewModel::onPasswordChange,
         onConfirmPasswordChanged = viewModel::onConfirmPasswordChange,
         onSubmit = viewModel::onSubmit,
+        onGoogleSignIn = {
+            if (!state.isSubmitting && !state.isGoogleSubmitting) {
+                viewModel.onGoogleSignInStarted()
+                googleSignInLauncher.launch(viewModel.googleSignInIntent)
+            }
+        },
         onToggleMode = viewModel::toggleMode
     )
 }

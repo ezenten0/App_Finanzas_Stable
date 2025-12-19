@@ -1,6 +1,6 @@
 package com.example.app_finanzas.insights
 
-import com.example.app_finanzas.data.insights.BudgetSnapshot
+import com.example.app_finanzas.data.budget.BudgetGoal
 import com.example.app_finanzas.data.insights.InsightsRepository
 import com.example.app_finanzas.home.analytics.FinancialInsight
 import com.example.app_finanzas.home.analytics.InsightCategory
@@ -54,7 +54,7 @@ class InsightsRepositoryIntegrationTest {
             )
         )
 
-        val result = repository.fetchInsights(localInsights, emptyList<BudgetSnapshot>())
+        val result = repository.fetchInsights(budgets = emptyList<BudgetGoal>(), localFallback = localInsights)
 
         val recorded = mockWebServer.takeRequest()
         assertEquals("/api/v1/insights", recorded.path)

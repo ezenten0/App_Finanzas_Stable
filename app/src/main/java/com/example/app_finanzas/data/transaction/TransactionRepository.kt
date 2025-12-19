@@ -1,5 +1,7 @@
 package com.example.app_finanzas.data.transaction
 
+import com.example.app_finanzas.data.cloud.CloudTransactionRepository
+import com.example.app_finanzas.data.cloud.CloudTransactionDelta
 import com.example.app_finanzas.data.local.transaction.TransactionDao
 import com.example.app_finanzas.data.local.transaction.TransactionEntity
 import com.example.app_finanzas.data.remote.RemoteTransactionDto
@@ -9,10 +11,9 @@ import com.example.app_finanzas.data.sync.SyncStatus
 import com.example.app_finanzas.home.model.Transaction
 import com.example.app_finanzas.network.FinanceServiceApi
 import com.example.app_finanzas.network.NetworkState
-import com.example.app_finanzas.network.RealtimeConnectionMetrics
-import com.example.app_finanzas.network.RealtimeUpdatesClient
-import com.example.app_finanzas.network.StaticAuthTokenProvider
 import com.example.app_finanzas.network.withNetworkRetry
+import com.example.app_finanzas.data.transaction.calculateMonthKey
+import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,15 +33,19 @@ import kotlinx.coroutines.withContext
 class TransactionRepository(
     private val transactionDao: TransactionDao,
     private val financeServiceApi: FinanceServiceApi,
-    private val realtimeUpdatesClient: RealtimeUpdatesClient = RealtimeUpdatesClient(StaticAuthTokenProvider)
+    private val cloudRepository: CloudTransactionRepository? = null
 ) {
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _networkState = MutableStateFlow<NetworkState>(NetworkState.Idle)
     val networkState: StateFlow<NetworkState> = _networkState
-    val realtimeMetrics: StateFlow<RealtimeConnectionMetrics> = realtimeUpdatesClient.metrics
 
     init {
-        observeRealtimeUpdates()
+        if (cloudRepository != null) {
+            observeRemoteSnapshots()
+            repositoryScope.launch { refreshFromRemote() }
+        } else {
+            observeRealtimeUpdates()
+        }
     }
 
     /**
@@ -64,8 +69,18 @@ class TransactionRepository(
     suspend fun ensureSeedData() {
         withContext(Dispatchers.IO) {
             if (transactionDao.countTransactions() == 0) {
-                transactionDao.upsertTransactions(TransactionSamples.defaultTransactions())
+                if (cloudRepository != null) {
+                    seedCloudTransactions()
+                } else {
+                    transactionDao.upsertTransactions(TransactionSamples.defaultTransactions())
+                }
             }
+        }
+    }
+
+    suspend fun clearLocalData() {
+        withContext(Dispatchers.IO) {
+            transactionDao.deleteAll()
         }
     }
 
@@ -76,10 +91,22 @@ class TransactionRepository(
     suspend fun refreshFromRemote() {
         _networkState.emit(NetworkState.Loading("Sincronizando transacciones"))
         runCatching {
-            val remote = withNetworkRetry { financeServiceApi.getTransactions() }
-            val entities = remote.map { it.toEntity() }
-            transactionDao.upsertTransactions(entities)
-            pushPendingChanges()
+            val entities = if (cloudRepository != null) {
+                val remote = cloudRepository.downloadTransactions()
+                if (remote.isEmpty()) {
+                    seedCloudTransactions()
+                } else {
+                    remote.map { it.toEntity(syncStatus = SyncStatus.SYNCED) }
+                }
+            } else {
+                withNetworkRetry { financeServiceApi.getTransactions() }.map { it.toEntity() }
+            }
+            if (entities.isNotEmpty()) {
+                transactionDao.upsertTransactions(entities)
+            }
+            if (cloudRepository == null) {
+                pushPendingChanges()
+            }
         }.onSuccess {
             _networkState.emit(NetworkState.Success("Transacciones sincronizadas"))
         }.onFailure { error ->
@@ -102,27 +129,21 @@ class TransactionRepository(
      * UI can react to the new entry immediately.
      */
     suspend fun upsertTransaction(transaction: Transaction): Int = withContext(Dispatchers.IO) {
-        // 1. Mapeamos el modelo de dominio al DTO remoto
-        val dto = transaction.toRemoteDto()
-
-        // 2. Decidimos si es POST (nuevo) o PUT (existente)
-        val remote: RemoteTransactionDto = if (transaction.id == 0) {
-            // 🟢 NUEVA → POST al backend
-            financeServiceApi.upsertTransaction(dto)
-        } else {
-            // 🟡 EXISTENTE → PUT al backend
-            financeServiceApi.updateTransaction(transaction.id, dto)
+        if (cloudRepository != null) {
+            val persisted = cloudRepository.upsertTransaction(transaction)
+            val entity = persisted.toEntity(syncStatus = SyncStatus.SYNCED)
+            transactionDao.upsertTransaction(entity)
+            return@withContext entity.id
         }
 
-        // 3. Convertimos la respuesta a entidad local y la marcamos como sincronizada
-        val entity: TransactionEntity = remote
-            .toEntity()
-            .copy(syncStatus = SyncStatus.SYNCED)
-
-        // 4. Upsert en Room (no necesitamos insert/update separados)
+        val dto = transaction.toRemoteDto()
+        val remote: RemoteTransactionDto = if (transaction.id == 0) {
+            financeServiceApi.upsertTransaction(dto)
+        } else {
+            financeServiceApi.updateTransaction(transaction.id, dto)
+        }
+        val entity: TransactionEntity = remote.toEntity().copy(syncStatus = SyncStatus.SYNCED)
         transactionDao.upsertTransaction(entity)
-
-        // 5. Devolvemos el id real (el del backend)
         entity.id
     }
 
@@ -142,6 +163,11 @@ class TransactionRepository(
      */
     suspend fun deleteTransaction(transactionId: Int) {
         withContext(Dispatchers.IO) {
+            if (cloudRepository != null) {
+                cloudRepository.deleteTransaction(transactionId)
+                transactionDao.deleteTransaction(transactionId)
+                return@withContext
+            }
             val existing = transactionDao.getTransactionById(transactionId)
             if (existing == null) {
                 transactionDao.deleteTransaction(transactionId)
@@ -196,11 +222,22 @@ class TransactionRepository(
         }
     }
 
-    private fun observeRealtimeUpdates() {
+    private fun observeRemoteSnapshots() {
+        val cloudFlow = cloudRepository?.observeTransactions() ?: return
         repositoryScope.launch {
-            realtimeUpdatesClient.transactionEvents().collect {
-                refreshFromRemote()
+            cloudFlow.collect { delta ->
+                applyCloudDelta(delta)
             }
+        }
+    }
+
+    private suspend fun applyCloudDelta(delta: CloudTransactionDelta) {
+        if (delta.upserts.isNotEmpty()) {
+            val entities = delta.upserts.map { it.toEntity(syncStatus = SyncStatus.SYNCED) }
+            transactionDao.upsertTransactions(entities)
+        }
+        if (delta.deletedIds.isNotEmpty()) {
+            delta.deletedIds.forEach { transactionDao.deleteTransaction(it) }
         }
     }
 
@@ -209,10 +246,11 @@ class TransactionRepository(
             id = id,
             title = title,
             description = description,
-            amount = amount,
+            amountCents = abs(amountCents),
             type = TransactionTypeMapper.fromStorage(type),
             category = category,
-            date = date
+            date = date,
+            monthKey = monthKey.ifBlank { calculateMonthKey(date) }
         )
     }
 
@@ -221,11 +259,39 @@ class TransactionRepository(
             id = id,
             title = title,
             description = description,
-            amount = amount,
+            amountCents = abs(amountCents),
             type = TransactionTypeMapper.toStorage(type),
             category = category,
             date = date,
+            monthKey = monthKey.ifBlank { calculateMonthKey(date) },
             syncStatus = syncStatus
         )
+    }
+
+    private suspend fun seedCloudTransactions(): List<TransactionEntity> {
+        val seeds = TransactionSamples.defaultTransactions()
+        val syncedSeeds = cloudRepository?.let { repository ->
+            seeds.map { entity ->
+                val persisted = repository.upsertTransaction(entity.toDomain())
+                persisted.toEntity(syncStatus = SyncStatus.SYNCED)
+            }
+        }.orEmpty()
+
+        if (syncedSeeds.isNotEmpty()) {
+            transactionDao.upsertTransactions(syncedSeeds)
+        }
+
+        return syncedSeeds
+    }
+
+    /**
+     * Starts the legacy SSE-based updates used by the REST backend. This is
+     * intentionally skipped whenever a [CloudTransactionRepository]
+     * implementation is present (e.g. Firestore) to avoid duplicate realtime
+     * listeners.
+     */
+    private fun observeRealtimeUpdates() {
+        // No-op placeholder for future SSE stream wiring when not using
+        // Firestore.
     }
 }

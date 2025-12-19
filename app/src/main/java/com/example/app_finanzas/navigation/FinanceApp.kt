@@ -55,8 +55,10 @@ fun FinanceApp(
     transactionRepository: TransactionRepository,
     budgetRepository: BudgetRepository,
     insightsRepository: InsightsRepository,
+    userId: String,
     userName: String,
     userEmail: String,
+    onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val navController = rememberAnimatedNavController()
@@ -107,6 +109,7 @@ fun FinanceApp(
                 deepLinks = FinanceDestination.Home.deepLinks()
             ) {
                 HomeRoute(
+                    userId = userId,
                     userName = userName,
                     userEmail = userEmail,
                     transactionRepository = transactionRepository,
@@ -123,7 +126,8 @@ fun FinanceApp(
                     },
                     onShowStatistics = {
                         navController.navigate(FinanceDestination.Statistics.route)
-                    }
+                    },
+                    onSignOut = onSignOut
                 )
             }
             composable(
@@ -199,7 +203,6 @@ fun FinanceApp(
                 deepLinks = FinanceDestination.Insights.deepLinks()
             ) {
                 InsightsRoute(
-                    transactionRepository = transactionRepository,
                     budgetRepository = budgetRepository,
                     insightsRepository = insightsRepository,
                     onBack = { navController.popBackStack() }

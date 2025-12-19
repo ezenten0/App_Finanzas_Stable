@@ -16,8 +16,10 @@ object TransactionAnalytics {
      * the dashboard header.
      */
     fun calculateBalanceSummary(transactions: List<Transaction>): BalanceSummary {
-        val income = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        val expense = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        val incomeCents = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amountCents }
+        val expenseCents = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amountCents }
+        val income = incomeCents / 100.0
+        val expense = expenseCents / 100.0
         return BalanceSummary(
             totalIncome = income,
             totalExpense = expense,
@@ -33,7 +35,7 @@ object TransactionAnalytics {
         return transactions
             .filter { it.type == TransactionType.EXPENSE }
             .groupBy { it.category }
-            .mapValues { entry -> entry.value.sumOf { it.amount } }
+            .mapValues { entry -> entry.value.sumOf { it.amountCents } / 100.0 }
     }
 
     /**
@@ -93,10 +95,10 @@ object TransactionAnalytics {
             val transactionsForDate = groupedByDate[date].orEmpty()
             val income = transactionsForDate
                 .filter { it.type == TransactionType.INCOME }
-                .sumOf { it.amount }
+                .sumOf { it.amountCents } / 100.0
             val expense = transactionsForDate
                 .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+                .sumOf { it.amountCents } / 100.0
             TimeSeriesPoint(date = date, income = income, expense = expense)
         }
     }

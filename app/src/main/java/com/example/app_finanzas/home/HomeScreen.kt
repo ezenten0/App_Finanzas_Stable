@@ -8,6 +8,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,9 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -78,6 +82,7 @@ private val currencyFormatter: NumberFormat =
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HomeRoute(
+    userId: String,
     userName: String,
     userEmail: String,
     transactionRepository: TransactionRepository,
@@ -87,17 +92,18 @@ fun HomeRoute(
     onTransactionSelected: (Int) -> Unit,
     onShowInsights: () -> Unit,
     onShowStatistics: () -> Unit,
+    onSignOut: () -> Unit,
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(transactionRepository)
     ),
     insightsViewModel: InsightsViewModel = viewModel(
-        factory = InsightsViewModelFactory(transactionRepository, budgetRepository, insightsRepository)
+        factory = InsightsViewModelFactory(budgetRepository, insightsRepository)
     )
 ) {
     val state by viewModel.uiState
     val insightsState by insightsViewModel.uiState.collectAsState()
-    LaunchedEffect(userName, userEmail) {
-        viewModel.updateUserProfile(userName, userEmail)
+    LaunchedEffect(userId, userName, userEmail) {
+        viewModel.updateUserProfile(userId, userName, userEmail)
     }
     HomeScreen(
         state = state,
@@ -105,6 +111,7 @@ fun HomeRoute(
         onAddTransaction = onAddTransaction,
         onShowInsights = onShowInsights,
         onShowStatistics = onShowStatistics,
+        onSignOut = onSignOut,
         insightsState = insightsState,
         onRefreshInsights = { insightsViewModel.refreshInsights(forceRefresh = true) }
     )
@@ -123,6 +130,7 @@ fun HomeScreen(
     onAddTransaction: () -> Unit = {},
     onShowInsights: () -> Unit = {},
     onShowStatistics: () -> Unit = {},
+    onSignOut: () -> Unit = {},
     insightsState: InsightsUiState = InsightsUiState(),
     onRefreshInsights: () -> Unit = {}
 ) {
@@ -131,7 +139,8 @@ fun HomeScreen(
             HomeTopBar(
                 userName = state.userName,
                 userEmail = state.userEmail,
-                onShowInsights = onShowInsights
+                onShowInsights = onShowInsights,
+                onSignOut = onSignOut
             )
         },
         floatingActionButton = {
@@ -186,9 +195,11 @@ fun HomeScreen(
 private fun HomeTopBar(
     userName: String,
     userEmail: String,
-    onShowInsights: () -> Unit
+    onShowInsights: () -> Unit,
+    onSignOut: () -> Unit
 ) {
     val greetingName = userName.ifBlank { "Usuario" }
+    var menuExpanded by remember { mutableStateOf(false) }
     TopAppBar(
         title = {
             Column {
@@ -216,6 +227,26 @@ private fun HomeTopBar(
                     imageVector = Icons.Rounded.Notifications,
                     contentDescription = "Notificaciones"
                 )
+            }
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(
+                        imageVector = Icons.Rounded.MoreVert,
+                        contentDescription = "Más opciones"
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(text = "Cerrar sesión") },
+                        onClick = {
+                            menuExpanded = false
+                            onSignOut()
+                        }
+                    )
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -584,19 +615,21 @@ private fun HomeScreenPreview() {
                         id = 1,
                         title = "Pago de salario",
                         description = "Depósito mensual de tu trabajo",
-                        amount = 1450.0,
+                        amountCents = 145_000,
                         type = TransactionType.INCOME,
                         category = "Salario",
-                        date = "2024-10-05"
+                        date = "2024-10-05",
+                        monthKey = "2024-10"
                     ),
                     Transaction(
                         id = 2,
                         title = "Supermercado",
                         description = "Compra semanal",
-                        amount = 210.5,
+                        amountCents = 21_050,
                         type = TransactionType.EXPENSE,
                         category = "Alimentos",
-                        date = "2024-10-06"
+                        date = "2024-10-06",
+                        monthKey = "2024-10"
                     )
                 )
             ),

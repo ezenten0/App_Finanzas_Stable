@@ -1,5 +1,7 @@
 package com.example.app_finanzas.network
 
+import com.example.app_finanzas.BuildConfig
+
 /**
  * Centralizes network-related constants used across Retrofit clients.
  */
@@ -7,29 +9,23 @@ object NetworkConfig {
 
     /**
      * Primary backend (ledger-service) for CRUD synchronization.
-     * Puerto 8080
      */
-    const val FINANCE_SERVICE_BASE_URL = "http://10.0.2.2:8080/"
+    val FINANCE_SERVICE_BASE_URL: String
+        get() = BuildConfig.LEDGER_BASE_URL.ensureTrailingSlash()
 
     /**
      * risk-service: expone /api/v1/insights en el puerto 8081.
      */
-    const val RISK_SERVICE_BASE_URL = "http://10.0.2.2:8081/"
+    val RISK_SERVICE_BASE_URL: String
+        get() = BuildConfig.RISK_BASE_URL.ensureTrailingSlash()
 
     /**
      * notification-service: por si luego consumes algo directo de ahí.
-     * Puerto 8082.
      */
-    const val NOTIFICATION_SERVICE_BASE_URL = "http://10.0.2.2:8082/"
+    val NOTIFICATION_SERVICE_BASE_URL: String
+        get() = BuildConfig.NOTIF_BASE_URL.ensureTrailingSlash()
+}
 
-    /**
-     * SSE de cambios de transacciones, publicado por el ledger-service.
-     * Termina apuntando a:
-     * http://10.0.2.2:8080/api/transactions/stream
-     */
-    const val REALTIME_TRANSACTIONS_URL =
-        FINANCE_SERVICE_BASE_URL + "api/transactions/stream"
-
-    const val realtimeFallbackIntervalMs = 15_000L
-    const val realtimeConnectionTimeoutMs = 5_000L
+private fun String.ensureTrailingSlash(): String {
+    return if (endsWith("/")) this else "$this/"
 }

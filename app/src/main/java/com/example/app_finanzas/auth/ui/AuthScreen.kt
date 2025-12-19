@@ -16,6 +16,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +48,7 @@ fun AuthScreen(
     onPasswordChanged: (String) -> Unit,
     onConfirmPasswordChanged: (String) -> Unit,
     onSubmit: () -> Unit,
+    onGoogleSignIn: () -> Unit,
     onToggleMode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -125,7 +127,7 @@ fun AuthScreen(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = onSubmit,
-                    enabled = !state.isSubmitting,
+                    enabled = !state.isSubmitting && !state.isGoogleSubmitting,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -143,8 +145,26 @@ fun AuthScreen(
                     }
                 }
 
+                OutlinedButton(
+                    onClick = onGoogleSignIn,
+                    enabled = !state.isGoogleSubmitting && !state.isSubmitting,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (state.isGoogleSubmitting) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        Text(text = "Continuar con Google")
+                    }
+                }
+
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    TextButton(onClick = onToggleMode, enabled = !state.isSubmitting) {
+                    TextButton(
+                        onClick = onToggleMode,
+                        enabled = !state.isSubmitting && !state.isGoogleSubmitting
+                    ) {
                         val toggleText = if (state.mode == AuthMode.LOGIN) {
                             "¿No tienes cuenta? Regístrate"
                         } else {
@@ -249,6 +269,7 @@ private fun AuthScreenLoginPreview() {
             onPasswordChanged = {},
             onConfirmPasswordChanged = {},
             onSubmit = {},
+            onGoogleSignIn = {},
             onToggleMode = {}
         )
     }
@@ -265,6 +286,7 @@ private fun AuthScreenRegisterPreview() {
             onPasswordChanged = {},
             onConfirmPasswordChanged = {},
             onSubmit = {},
+            onGoogleSignIn = {},
             onToggleMode = {}
         )
     }

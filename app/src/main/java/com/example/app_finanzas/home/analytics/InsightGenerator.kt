@@ -18,10 +18,10 @@ object InsightGenerator {
 
         val totalIncome = monthTransactions
             .filter { it.type == TransactionType.INCOME }
-            .sumOf { it.amount }
+            .sumOf { it.amountCents } / 100.0
         val totalExpense = monthTransactions
             .filter { it.type == TransactionType.EXPENSE }
-            .sumOf { it.amount }
+            .sumOf { it.amountCents } / 100.0
         val netBalance = totalIncome - totalExpense
 
         val insights = mutableListOf<FinancialInsight>()
@@ -48,7 +48,7 @@ object InsightGenerator {
         val expensesByCategory = monthTransactions
             .filter { it.type == TransactionType.EXPENSE }
             .groupBy { it.category }
-            .mapValues { entry -> entry.value.sumOf { it.amount } }
+            .mapValues { entry -> entry.value.sumOf { it.amountCents } / 100.0 }
 
         if (expensesByCategory.isNotEmpty()) {
             val (topCategory, amount) = expensesByCategory.maxByOrNull { it.value }!!

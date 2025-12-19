@@ -44,6 +44,9 @@ interface BudgetDao {
     @Query("DELETE FROM budgets WHERE id = :budgetId")
     suspend fun deleteBudget(budgetId: Int)
 
+    @Query("DELETE FROM budgets")
+    suspend fun deleteAll()
+
     @Query("SELECT * FROM budgets WHERE syncStatus != :syncedStatus")
     suspend fun getPendingBudgets(syncedStatus: SyncStatus = SyncStatus.SYNCED): List<BudgetEntity>
 

@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 public record TransactionResponse(
-        Long id,
+        String id,
         TransactionType type,
         BigDecimal amount,
         String title,

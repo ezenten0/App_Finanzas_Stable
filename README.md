@@ -59,6 +59,7 @@ Los interceptores HTTP (`FinanceHttp`) ahora registran la duración de cada requ
 1. **Preparar el entorno**
    - Instala JDK 17 y Android Studio Koala o superior.
    - En la raíz del repo, crea `local.properties` con `sdk.dir=/ruta/al/Android/Sdk` para permitir la compilación y las pruebas.
+   - Descarga el `google-services.json` del proyecto de Firebase (módulo Android con el package `com.example.app_finanzas`) y colócalo en `app/`. El archivo incluido en el repo es solo un placeholder sin credenciales reales; evita versionar el JSON real o bien sobreescríbelo localmente.
    - Asegura el keystore en `keystore/` (incluido) y valida que las credenciales estén definidas como variables de entorno para el `signingConfig`.
 2. **Levantar los microservicios Spring Boot**
    - Cada servicio está incluido como módulo Gradle: `:services:ledger-service`, `:services:risk-service` y `:services:notification-service`.
@@ -69,7 +70,7 @@ Los interceptores HTTP (`FinanceHttp`) ahora registran la duración de cada requ
    - Cada servicio usa base de datos en memoria/h2 por defecto; ajusta `application.yml` si quieres persistencia real.
 3. **Integración app–microservicios en tiempo real**
    - La app consume los endpoints anteriores mediante Retrofit. La capa de repositorios mezcla Room (cache local) con llamadas REST para sincronizar CRUD.
-   - Ledger expone `/api/transactions/stream` via Server-Sent Events y la app escucha con `RealtimeUpdatesClient` (OkHttp SSE); si el stream cae, el repositorio sigue haciendo short-polling.
+   - Las transacciones del usuario también se escuchan desde Firebase/Firestore con `addSnapshotListener` sobre `users/{uid}/transactions`, manteniendo Room sincronizado sin requerir conexiones SSE contra el backend.
    - Define variables de entorno o un archivo de configuración para las URLs base (`LEDGER_BASE_URL`, `RISK_BASE_URL`, `NOTIF_BASE_URL`).
 4. **Consumir API externa**
    - El `risk-service` consulta una API pública de tasas FX (`external.fx.url`) para enriquecer los insights que devuelve en `/api/v1/insights`, los cuales se consumen desde la pantalla de Insights.
@@ -85,9 +86,6 @@ Los interceptores HTTP (`FinanceHttp`) ahora registran la duración de cada requ
    - Comprueba que las notificaciones/eventos en tiempo real actualicen la UI sin recargar manualmente y que los datos externos (API pública) se muestren correctamente.
    - Un smoke test automatizado (`InsightControllerTest`) simula la API externa y verifica que `/api/v1/insights` devuelva tanto tasas FX como casos de riesgo locales.
    - Finalmente, genera el APK release y prueba la instalación para asegurar que la firma y la configuración de red funcionan en un entorno limpio.
-
-**Microservicios/Docs**
-Consultar : [`docs/microservices/SPRING_BOOT_ENDPOINTS.md`](docs/microservices/SPRING_BOOT_ENDPOINTS.md)
 
 ## Próximos pasos sugeridos
 

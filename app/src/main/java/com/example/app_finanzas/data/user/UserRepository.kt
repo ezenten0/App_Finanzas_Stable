@@ -23,7 +23,7 @@ class UserRepository(private val userDao: UserDao) {
 
         return Result.success(
             UserProfile(
-                id = userId.toInt(),
+                uid = userId.toString(),
                 name = name.trim(),
                 email = normalizedEmail
             )
@@ -38,7 +38,7 @@ class UserRepository(private val userDao: UserDao) {
 
         return Result.success(
             UserProfile(
-                id = user.id,
+                uid = user.id.toString(),
                 name = user.name,
                 email = user.email
             )

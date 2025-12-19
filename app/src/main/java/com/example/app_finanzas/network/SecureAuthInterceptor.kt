@@ -1,5 +1,6 @@
 package com.example.app_finanzas.network
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -11,10 +12,11 @@ class SecureAuthInterceptor(
     private val tokenProvider: AuthTokenProvider
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-            .newBuilder()
-            .header("Authorization", "Bearer ${tokenProvider.provideToken()}")
-            .build()
-        return chain.proceed(request)
+        val token = runBlocking { tokenProvider.provideToken() }
+        val requestBuilder = chain.request().newBuilder()
+        if (token != null) {
+            requestBuilder.header("Authorization", "Bearer $token")
+        }
+        return chain.proceed(requestBuilder.build())
     }
 }

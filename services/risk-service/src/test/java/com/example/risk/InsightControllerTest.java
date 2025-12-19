@@ -1,5 +1,7 @@
 package com.example.risk;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
 import com.example.risk.repository.RiskCaseRepository;
 import com.example.risk.web.dto.BudgetSnapshotRequest;
 import com.example.risk.web.dto.InsightsRequest;
@@ -17,11 +19,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class InsightControllerTest {
@@ -58,36 +66,47 @@ class InsightControllerTest {
 
     @Test
     void returnsInsightsWithBudgetAlertsAndRates() throws Exception {
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("{\"rates\":{\"MXN\":17.5}}")
-                .addHeader("Content-Type", "application/json"));
+        try (MockedStatic<FirebaseAuth> firebaseAuth = mockStatic(FirebaseAuth.class)) {
+            FirebaseAuth auth = mock(FirebaseAuth.class);
+            FirebaseToken token = mock(FirebaseToken.class);
+            when(token.getUid()).thenReturn("test-user");
+            firebaseAuth.when(FirebaseAuth::getInstance).thenReturn(auth);
+            when(auth.verifyIdToken("valid-token")).thenReturn(token);
 
-        repository.deleteAll();
-        InsightsRequest request = new InsightsRequest(
-                "user-1",
-                List.of(new BudgetSnapshotRequest("Alimentos", 400.0, 320.0, 0.8))
-        );
+            mockWebServer.enqueue(new MockResponse()
+                    .setBody("{\"rates\":{\"MXN\":17.5}}")
+                    .addHeader("Content-Type", "application/json"));
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                "http://localhost:" + port + "/api/v1/insights",
-                request,
-                String.class
-        );
+            repository.deleteAll();
+            InsightsRequest request = new InsightsRequest(
+                    "user-1",
+                    List.of(new BudgetSnapshotRequest("Alimentos", 400.0, 320.0, 0.8))
+            );
 
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth("valid-token");
 
-        JsonNode json = objectMapper.readTree(response.getBody());
-        assertThat(json.get("insights").isArray()).isTrue();
-        assertThat(json.get("insights").size()).isGreaterThanOrEqualTo(1);
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    "http://localhost:" + port + "/api/v1/insights",
+                    new HttpEntity<>(request, headers),
+                    String.class
+            );
 
-        Map<String, Boolean> flags = Map.of(
-                "hasRate", json.get("insights").toString().contains("MXN"),
-                "hasBudgetAlert", json.get("insights").toString().contains("budget-Alimentos")
-        );
-        assertThat(flags.get("hasRate")).isTrue();
-        assertThat(flags.get("hasBudgetAlert")).isTrue();
+            assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 
-        assertThat(repository.findAll()).hasSize(1);
-        assertThat(repository.findAll().get(0).getReason()).contains("Alimentos");
+            JsonNode json = objectMapper.readTree(response.getBody());
+            assertThat(json.get("insights").isArray()).isTrue();
+            assertThat(json.get("insights").size()).isGreaterThanOrEqualTo(1);
+
+            Map<String, Boolean> flags = Map.of(
+                    "hasRate", json.get("insights").toString().contains("MXN"),
+                    "hasBudgetAlert", json.get("insights").toString().contains("budget-Alimentos")
+            );
+            assertThat(flags.get("hasRate")).isTrue();
+            assertThat(flags.get("hasBudgetAlert")).isTrue();
+
+            assertThat(repository.findAll()).hasSize(1);
+            assertThat(repository.findAll().get(0).getReason()).contains("Alimentos");
+        }
     }
 }

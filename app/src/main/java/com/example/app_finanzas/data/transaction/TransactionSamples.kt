@@ -20,60 +20,66 @@ object TransactionSamples {
                 id = 1,
                 title = "Pago de salario",
                 description = "Depósito mensual de tu trabajo",
-                amount = 1450.0,
+                amountCents = 145_000,
                 type = TransactionTypeMapper.toStorage(TransactionType.INCOME),
                 category = "Salario",
                 date = "2024-10-05",
+                monthKey = "2024-10",
                 syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 2,
                 title = "Supermercado",
                 description = "Compra semanal",
-                amount = 210.5,
+                amountCents = 21_050,
                 type = TransactionTypeMapper.toStorage(TransactionType.EXPENSE),
                 category = "Alimentos",
                 date = "2024-10-06",
+                monthKey = "2024-10",
                 syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 3,
                 title = "Freelance diseño",
                 description = "Proyecto UX/UI",
-                amount = 380.0,
+                amountCents = 38_000,
                 type = TransactionTypeMapper.toStorage(TransactionType.INCOME),
                 category = "Freelance",
                 date = "2024-10-07",
+                monthKey = "2024-10",
                 syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 4,
                 title = "Suscripción streaming",
                 description = "Plan familiar",
-                amount = 12.99,
+                amountCents = 1_299,
                 type = TransactionTypeMapper.toStorage(TransactionType.EXPENSE),
                 category = "Entretenimiento",
                 date = "2024-10-08",
+                monthKey = "2024-10",
                 syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 5,
                 title = "Cena con amigos",
                 description = "Restaurante centro",
-                amount = 48.25,
+                amountCents = 4_825,
                 type = TransactionTypeMapper.toStorage(TransactionType.EXPENSE),
                 category = "Social",
                 date = "2024-10-08",
+                monthKey = "2024-10",
                 syncStatus = SyncStatus.SYNCED
             ),
             TransactionEntity(
                 id = 6,
                 title = "Intereses cuenta",
                 description = "Rendimiento mensual",
-                amount = 25.75,
+                amountCents = 2_575,
                 type = TransactionTypeMapper.toStorage(TransactionType.INCOME),
                 category = "Inversiones",
                 date = "2024-10-09",
+                monthKey = "2024-10",
                 syncStatus = SyncStatus.SYNCED
             )
         )
@@ -85,8 +91,8 @@ object TransactionSamples {
  * a user friendly representation in Compose.
  */
 object TransactionTypeMapper {
-    private const val CREDIT = "CREDIT"
-    private const val DEBIT = "DEBIT"
+    private const val INCOME = "income"
+    private const val EXPENSE = "expense"
 
     /**
      * Converts a domain type into the canonical value expected by the backend
@@ -94,8 +100,8 @@ object TransactionTypeMapper {
      * avoid leaking UI wording to the API.
      */
     fun toStorage(type: TransactionType): String = when (type) {
-        TransactionType.INCOME -> CREDIT
-        TransactionType.EXPENSE -> DEBIT
+        TransactionType.INCOME -> INCOME
+        TransactionType.EXPENSE -> EXPENSE
     }
 
     /**
@@ -105,9 +111,9 @@ object TransactionTypeMapper {
      * existing data while honoring the contract expected by ledger-service.
      */
     fun fromStorage(value: String): TransactionType {
-        return when (value.uppercase()) {
-            CREDIT, TransactionType.INCOME.name -> TransactionType.INCOME
-            DEBIT, TransactionType.EXPENSE.name -> TransactionType.EXPENSE
+        return when (value.lowercase()) {
+            INCOME, TransactionType.INCOME.name.lowercase(), "credit" -> TransactionType.INCOME
+            EXPENSE, TransactionType.EXPENSE.name.lowercase(), "debit" -> TransactionType.EXPENSE
             else -> TransactionType.EXPENSE
         }
     }

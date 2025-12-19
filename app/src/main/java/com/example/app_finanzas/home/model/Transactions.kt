@@ -16,8 +16,11 @@ data class Transaction(
     val id: Int,
     val title: String,
     val description: String,
-    val amount: Double,
+    val amountCents: Long,
     val type: TransactionType,
     val category: String,
-    val date: String
-)
+    val date: String,
+    val monthKey: String
+) {
+    val amount: Double get() = amountCents / 100.0
+}

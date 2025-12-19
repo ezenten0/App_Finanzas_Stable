@@ -1,17 +1,17 @@
 package com.example.app_finanzas.auth
 
+import android.content.Intent
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app_finanzas.data.user.UserProfile
-import com.example.app_finanzas.data.user.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class AuthViewModel(
-    private val userRepository: UserRepository
+    private val authRepository: FirebaseAuthRepository
 ) : ViewModel() {
 
     private val _uiState = mutableStateOf(AuthUiState())
@@ -84,26 +84,45 @@ class AuthViewModel(
             _uiState.value = _uiState.value.copy(isSubmitting = true, generalError = null)
             val result = withContext(Dispatchers.IO) {
                 when (_uiState.value.mode) {
-                    AuthMode.LOGIN -> userRepository.authenticate(state.email, state.password)
-                    AuthMode.REGISTER -> userRepository.registerUser(state.name, state.email, state.password)
+                    AuthMode.LOGIN -> authRepository.loginWithEmail(state.email, state.password)
+                    AuthMode.REGISTER -> authRepository.registerWithEmail(state.name, state.email, state.password)
                 }
             }
 
             result.fold(
                 onSuccess = { handleAuthenticationSuccess(it) },
-                onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isSubmitting = false,
-                        generalError = error.message ?: "Ha ocurrido un error inesperado."
-                    )
-                }
+                onFailure = { error -> handleAuthenticationError(error, forGoogle = false) }
             )
         }
     }
 
+    fun onGoogleSignInStarted() {
+        _uiState.value = _uiState.value.copy(
+            isGoogleSubmitting = true,
+            generalError = null
+        )
+    }
+
+    fun onGoogleSignInResult(data: Intent?) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                authRepository.signInWithGoogle(data)
+            }
+
+            result.fold(
+                onSuccess = { handleAuthenticationSuccess(it) },
+                onFailure = { error -> handleAuthenticationError(error, forGoogle = true) }
+            )
+        }
+    }
+
+    val googleSignInIntent: Intent
+        get() = authRepository.googleSignInIntent
+
     fun onAuthHandled() {
         _uiState.value = _uiState.value.copy(
             isSubmitting = false,
+            isGoogleSubmitting = false,
             authenticatedUser = null
         )
     }
@@ -111,8 +130,18 @@ class AuthViewModel(
     private fun handleAuthenticationSuccess(profile: UserProfile) {
         _uiState.value = _uiState.value.copy(
             isSubmitting = false,
+            isGoogleSubmitting = false,
             generalError = null,
             authenticatedUser = profile
+        )
+    }
+
+    private fun handleAuthenticationError(error: Throwable, forGoogle: Boolean) {
+        val message = authRepository.parseAuthError(error)
+        _uiState.value = _uiState.value.copy(
+            isSubmitting = false,
+            isGoogleSubmitting = if (forGoogle) false else _uiState.value.isGoogleSubmitting,
+            generalError = message
         )
     }
 

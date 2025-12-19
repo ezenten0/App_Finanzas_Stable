@@ -7,6 +7,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.app_finanzas.categories.CategoryDefinitions
 import com.example.app_finanzas.data.transaction.TransactionRepository
+import com.example.app_finanzas.data.transaction.calculateMonthKey
+import com.example.app_finanzas.data.transaction.toAmount
+import com.example.app_finanzas.data.transaction.toCents
 import com.example.app_finanzas.home.model.Transaction
 import com.example.app_finanzas.home.model.TransactionType
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,7 +75,10 @@ class TransactionFormViewModel(
                         transactionId = transaction.id,
                         title = transaction.title,
                         description = transaction.description,
-                        amount = transaction.amount.toString(),
+                        amount = transaction.amountCents.toAmount()
+                            .toBigDecimal()
+                            .stripTrailingZeros()
+                            .toPlainString(),
                         type = transaction.type,
                         category = transaction.category,
                         date = LocalDate.parse(transaction.date, formatter),
@@ -114,7 +120,7 @@ class TransactionFormViewModel(
         reduceState { it.copy(saveSucceeded = false) }
     }
 
-    private fun validateFields(): Double? {
+    private fun validateFields(): Long? {
         val state = _uiState.value
         val trimmedTitle = state.title.trim()
         val trimmedCategory = state.category.trim()
@@ -146,7 +152,7 @@ class TransactionFormViewModel(
         _uiState.value = updated
 
         return if (titleError == null && amountError == null && categoryError == null) {
-            amountValue
+            amountValue?.toCents()
         } else {
             null
         }
@@ -158,14 +164,16 @@ class TransactionFormViewModel(
         viewModelScope.launch {
             reduceState { it.copy(isSaving = true, errorMessage = null) }
             val state = _uiState.value
+            val normalizedDate = state.date.format(formatter)
             val transaction = Transaction(
                 id = state.transactionId ?: 0,
                 title = state.title.trim(),
                 description = state.description.trim(),
-                amount = amountValue,
+                amountCents = amountValue,
                 type = state.type,
                 category = state.category.trim(),
-                date = state.date.format(formatter)
+                date = normalizedDate,
+                monthKey = calculateMonthKey(normalizedDate)
             )
             runCatching { repository.upsertTransaction(transaction) }
                 .onSuccess { savedId ->

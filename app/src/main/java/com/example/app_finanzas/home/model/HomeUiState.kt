@@ -1,6 +1,7 @@
 package com.example.app_finanzas.home.model
 
 data class HomeUiState(
+    val userId: String = "",
     val userName: String = "",
     val userEmail: String = "",
     val totalBalance: Double = 0.0,

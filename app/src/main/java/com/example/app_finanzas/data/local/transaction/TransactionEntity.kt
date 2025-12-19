@@ -15,9 +15,10 @@ data class TransactionEntity(
     val id: Int = 0,
     val title: String,
     val description: String,
-    val amount: Double,
+    val amountCents: Long,
     val type: String,
     val category: String,
     val date: String,
+    val monthKey: String,
     val syncStatus: SyncStatus = SyncStatus.SYNCED
 )

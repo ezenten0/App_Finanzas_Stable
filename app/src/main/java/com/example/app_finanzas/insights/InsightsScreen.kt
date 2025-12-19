@@ -49,7 +49,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.app_finanzas.data.budget.BudgetRepository
-import com.example.app_finanzas.data.transaction.TransactionRepository
 import com.example.app_finanzas.home.analytics.FinancialInsight
 import com.example.app_finanzas.home.analytics.InsightCategory
 import com.example.app_finanzas.data.insights.InsightsRepository
@@ -57,14 +56,13 @@ import com.example.app_finanzas.data.insights.InsightsRepository
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun InsightsRoute(
-    transactionRepository: TransactionRepository,
     budgetRepository: BudgetRepository,
     insightsRepository: InsightsRepository,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val viewModel: InsightsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-        factory = InsightsViewModelFactory(transactionRepository, budgetRepository, insightsRepository)
+        factory = InsightsViewModelFactory(budgetRepository, insightsRepository)
     )
     val state by viewModel.uiState.collectAsState()
 

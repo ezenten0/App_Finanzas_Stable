@@ -9,32 +9,30 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TransactionService {
 
     private final TransactionRepository repository;
-    private final TransactionEventPublisher eventPublisher;
+    private final InsightsService insightsService;
 
-    public TransactionService(TransactionRepository repository, TransactionEventPublisher eventPublisher) {
+    public TransactionService(TransactionRepository repository, InsightsService insightsService) {
         this.repository = repository;
-        this.eventPublisher = eventPublisher;
+        this.insightsService = insightsService;
     }
 
-    public List<Transaction> findAll() {
-        return repository.findAll();
+    public List<Transaction> findAll(String userId) {
+        return repository.findAllForUser(userId);
     }
 
-    public Optional<Transaction> findById(Long id) {
-        return repository.findById(id);
+    public Optional<Transaction> findById(String userId, String id) {
+        return repository.findById(userId, id);
     }
 
-    @Transactional
-    public Transaction create(TransactionRequest request) {
+    public Transaction create(String userId, TransactionRequest request) {
         Transaction transaction = new Transaction(
                 null,
-                "mobile-account",
+                userId,
                 request.type(),
                 request.amount(),
                 request.title(),
@@ -45,33 +43,30 @@ public class TransactionService {
                 "USD",
                 Instant.now()
         );
-        Transaction saved = repository.save(transaction);
-        eventPublisher.publishTransactionSignal("transaction-created");
-        return saved;
+        Transaction created = repository.save(userId, transaction);
+        insightsService.recalculate(userId);
+        return created;
     }
 
-    @Transactional
-    public Optional<Transaction> update(Long id, TransactionRequest request) {
-        return repository.findById(id).map(existing -> {
+    public Optional<Transaction> update(String userId, String id, TransactionRequest request) {
+        return repository.findById(userId, id).map(existing -> {
             existing.setType(request.type());
             existing.setAmount(request.amount());
             existing.setTitle(request.title());
             existing.setDescription(request.description());
             existing.setCategory(request.category());
             existing.setEventDate(LocalDate.parse(request.date()));
-            Transaction updated = repository.save(existing);
-            eventPublisher.publishTransactionSignal("transaction-updated");
+            Transaction updated = repository.save(userId, existing);
+            insightsService.recalculate(userId);
             return updated;
         });
     }
 
-    @Transactional
-    public boolean delete(Long id) {
-        if (repository.existsById(id)) {
-            repository.deleteById(id);
-            eventPublisher.publishTransactionSignal("transaction-deleted");
-            return true;
+    public boolean delete(String userId, String id) {
+        boolean deleted = repository.delete(userId, id);
+        if (deleted) {
+            insightsService.recalculate(userId);
         }
-        return false;
+        return deleted;
     }
 }

@@ -16,8 +16,11 @@ java {
 dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.validation)
+    implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
+    implementation("com.google.firebase:firebase-admin:9.3.0")
+    implementation(libs.firebase.common)
     runtimeOnly(libs.h2)
     runtimeOnly(libs.postgresql)
     implementation("org.flywaydb:flyway-core")

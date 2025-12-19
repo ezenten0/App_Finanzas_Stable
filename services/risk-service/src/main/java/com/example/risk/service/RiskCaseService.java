@@ -18,12 +18,12 @@ public class RiskCaseService {
         this.repository = repository;
     }
 
-    public List<RiskCase> findAll() {
-        return repository.findAll();
+    public List<RiskCase> findAll(String userId) {
+        return repository.findAllByUserId(userId);
     }
 
-    public Optional<RiskCase> findById(Long id) {
-        return repository.findById(id);
+    public Optional<RiskCase> findById(Long id, String userId) {
+        return repository.findByIdAndUserId(id, userId);
     }
 
     @Transactional
@@ -53,7 +53,7 @@ public class RiskCaseService {
 
     @Transactional
     public Optional<RiskCase> update(Long id, RiskCaseRequest request) {
-        return repository.findById(id).map(existing -> {
+        return repository.findByIdAndUserId(id, request.userId()).map(existing -> {
             existing.setUserId(request.userId());
             existing.setScore(request.score());
             existing.setStatus(request.status());
@@ -63,8 +63,8 @@ public class RiskCaseService {
     }
 
     @Transactional
-    public boolean delete(Long id) {
-        if (repository.existsById(id)) {
+    public boolean delete(Long id, String userId) {
+        if (repository.findByIdAndUserId(id, userId).isPresent()) {
             repository.deleteById(id);
             return true;
         }

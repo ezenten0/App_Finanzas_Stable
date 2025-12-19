@@ -1,6 +1,7 @@
 package com.example.app_finanzas.data.budget
 
 import com.example.app_finanzas.categories.CategoryDefinitions
+import com.example.app_finanzas.data.cloud.CloudBudgetRepository
 import com.example.app_finanzas.data.local.budget.BudgetDao
 import com.example.app_finanzas.data.local.budget.BudgetEntity
 import com.example.app_finanzas.data.remote.RemoteBudgetAlertEvent
@@ -12,6 +13,7 @@ import com.example.app_finanzas.network.FinanceServiceApi
 import com.example.app_finanzas.network.NetworkState
 import com.example.app_finanzas.network.RiskServiceApi
 import com.example.app_finanzas.network.withNetworkRetry
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,7 +33,9 @@ import kotlinx.coroutines.withContext
 class BudgetRepository(
     private val budgetDao: BudgetDao,
     private val financeServiceApi: FinanceServiceApi,
-    private val riskServiceApi: RiskServiceApi
+    private val riskServiceApi: RiskServiceApi,
+    private val cloudRepository: CloudBudgetRepository? = null,
+    private val userIdProvider: () -> String? = { FirebaseAuth.getInstance().currentUser?.uid }
 ) {
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _networkState = MutableStateFlow<NetworkState>(NetworkState.Idle)
@@ -47,9 +51,22 @@ class BudgetRepository(
     suspend fun refreshFromRemote() {
         _networkState.emit(NetworkState.Loading("Sincronizando presupuestos"))
         runCatching {
-            val remote = withNetworkRetry { financeServiceApi.getBudgets() }
-            budgetDao.upsertBudgets(remote.map { it.toEntity() })
-            pushPendingBudgets()
+            val entities = if (cloudRepository != null) {
+                val remote = cloudRepository.downloadBudgets()
+                if (remote.isEmpty()) {
+                    seedCloudBudgets()
+                } else {
+                    remote.map { it.toEntity(syncStatus = SyncStatus.SYNCED) }
+                }
+            } else {
+                withNetworkRetry { financeServiceApi.getBudgets() }.map { it.toEntity() }
+            }
+            if (entities.isNotEmpty()) {
+                budgetDao.upsertBudgets(entities)
+            }
+            if (cloudRepository == null) {
+                pushPendingBudgets()
+            }
         }.onSuccess {
             _networkState.emit(NetworkState.Success("Presupuestos sincronizados"))
         }.onFailure { error ->
@@ -65,6 +82,13 @@ class BudgetRepository(
 
     suspend fun upsertBudget(goal: BudgetGoal): Int {
         return withContext(Dispatchers.IO) {
+            if (cloudRepository != null) {
+                val persisted = cloudRepository.upsertBudget(goal)
+                val entity = persisted.toEntity(syncStatus = SyncStatus.SYNCED)
+                budgetDao.upsertBudget(entity)
+                return@withContext entity.id
+            }
+
             val entity = goal.toEntity(syncStatus = SyncStatus.PENDING_UPLOAD)
             val id = budgetDao.upsertBudget(entity).toInt()
             val resolvedId = if (entity.id != 0) entity.id else id
@@ -75,6 +99,11 @@ class BudgetRepository(
 
     suspend fun deleteBudget(id: Int) {
         withContext(Dispatchers.IO) {
+            if (cloudRepository != null) {
+                cloudRepository.deleteBudget(id)
+                budgetDao.deleteBudget(id)
+                return@withContext
+            }
             val existing = budgetDao.getBudgetById(id)
             if (existing == null) {
                 budgetDao.deleteBudget(id)
@@ -89,8 +118,18 @@ class BudgetRepository(
         withContext(Dispatchers.IO) {
             val current = budgetDao.observeBudgets().first()
             if (current.isEmpty()) {
-                defaults.forEach { budgetDao.upsertBudget(it.toEntity(syncStatus = SyncStatus.SYNCED)) }
+                if (cloudRepository != null) {
+                    seedCloudBudgets(defaults)
+                } else {
+                    defaults.forEach { budgetDao.upsertBudget(it.toEntity(syncStatus = SyncStatus.SYNCED)) }
+                }
             }
+        }
+    }
+
+    suspend fun clearLocalData() {
+        withContext(Dispatchers.IO) {
+            budgetDao.deleteAll()
         }
     }
 
@@ -127,7 +166,7 @@ class BudgetRepository(
         }
     }
 
-    fun trackBudgetAlerts(progress: List<BudgetProgress>, userId: String = "mobile-user") {
+    fun trackBudgetAlerts(progress: List<BudgetProgress>) {
         val activeCategories = progress.map { it.category }.toSet()
         triggeredAlerts.update { alerts -> alerts.filterKeys { it in activeCategories } }
 
@@ -140,7 +179,7 @@ class BudgetRepository(
                     alerts + (item.category to currentLevel)
                 }
                 repositoryScope.launch {
-                    sendBudgetAlert(userId = userId, progress = item, level = currentLevel)
+                    sendBudgetAlert(progress = item, level = currentLevel)
                 }
             } else if (currentLevel == BudgetAlertLevel.NONE && previousLevel != BudgetAlertLevel.NONE) {
                 triggeredAlerts.update { alerts ->
@@ -159,10 +198,15 @@ class BudgetRepository(
     }
 
     private suspend fun sendBudgetAlert(
-        userId: String,
         progress: BudgetProgress,
         level: BudgetAlertLevel
     ) {
+        val userId = userIdProvider()?.takeUnless { it.isBlank() }
+        if (userId == null) {
+            _networkState.emit(NetworkState.Error("Usuario no autenticado para notificar alerta"))
+            return
+        }
+
         val threshold = if (level == BudgetAlertLevel.CRITICAL) 1.0 else 0.75
         val payload = RemoteBudgetAlertEvent(
             userId = userId,
@@ -196,6 +240,21 @@ class BudgetRepository(
             iconKey = iconKey,
             syncStatus = syncStatus
         )
+    }
+
+    private suspend fun seedCloudBudgets(defaults: List<BudgetGoal> = BudgetDefaults.defaultGoals()): List<BudgetEntity> {
+        val syncedSeeds = cloudRepository?.let { repository ->
+            defaults.map { default ->
+                val persisted = repository.upsertBudget(default)
+                persisted.toEntity(syncStatus = SyncStatus.SYNCED)
+            }
+        }.orEmpty()
+
+        if (syncedSeeds.isNotEmpty()) {
+            budgetDao.upsertBudgets(syncedSeeds)
+        }
+
+        return syncedSeeds
     }
 }
 

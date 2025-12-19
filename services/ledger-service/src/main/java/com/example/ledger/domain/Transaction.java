@@ -1,65 +1,31 @@
 package com.example.ledger.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import java.time.LocalDate;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 
-@Entity
-@Table(name = "transactions")
 public class Transaction {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, length = 64)
-    private String accountId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    private String id;
+    private String userId;
     private TransactionType type;
-
-    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
-
-    @Column(nullable = false, length = 200)
     private String title;
-
-    @Column(nullable = false, length = 200)
     private String description;
-
-    @Column(nullable = false, length = 120)
     private String category;
-
-    @Column(name = "event_date", nullable = false)
     private LocalDate eventDate;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
     private TransactionStatus status;
-
-    @Column(nullable = false)
     private Instant createdAt;
+    private String currency;
 
     public Transaction() {
     }
 
-    @Column(nullable = false, length = 3)
-    private String currency;
-
-    public Transaction(Long id, String accountId, TransactionType type, BigDecimal amount, String title,
+    public Transaction(String id, String userId, TransactionType type, BigDecimal amount, String title,
                        String description, String category, LocalDate eventDate, TransactionStatus status,
                        String currency, Instant createdAt) {
         this.id = id;
-        this.accountId = accountId;
+        this.userId = userId;
         this.type = type;
         this.amount = amount;
         this.title = title;
@@ -71,12 +37,20 @@ public class Transaction {
         this.createdAt = createdAt;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public TransactionType getType() {
@@ -95,12 +69,12 @@ public class Transaction {
         this.amount = amount;
     }
 
-    public String getAccountId() {
-        return accountId;
+    public String getTitle() {
+        return title;
     }
 
-    public void setAccountId(String accountId) {
-        this.accountId = accountId;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getDescription() {
@@ -109,14 +83,6 @@ public class Transaction {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
     }
 
     public String getCategory() {
@@ -135,14 +101,6 @@ public class Transaction {
         this.eventDate = eventDate;
     }
 
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
     public TransactionStatus getStatus() {
         return status;
     }
@@ -157,5 +115,13 @@ public class Transaction {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 }

@@ -10,10 +10,10 @@ import java.time.LocalDate
 
 class TransactionAnalyticsTest : StringSpec({
     val baseTransactions = listOf(
-        Transaction(id = 1, title = "Salario", description = "Pago mensual", amount = 1500.0, type = TransactionType.INCOME, category = "Trabajo", date = "2024-10-01"),
-        Transaction(id = 2, title = "Alquiler", description = "Depto", amount = 700.0, type = TransactionType.EXPENSE, category = "Hogar", date = "2024-10-02"),
-        Transaction(id = 3, title = "Supermercado", description = "Compras", amount = 200.0, type = TransactionType.EXPENSE, category = "Alimentos", date = "2024-10-02"),
-        Transaction(id = 4, title = "Venta", description = "Garage", amount = 250.0, type = TransactionType.INCOME, category = "Otros", date = "2024-10-03")
+        Transaction(id = 1, title = "Salario", description = "Pago mensual", amountCents = 150_000, type = TransactionType.INCOME, category = "Trabajo", date = "2024-10-01", monthKey = "2024-10"),
+        Transaction(id = 2, title = "Alquiler", description = "Depto", amountCents = 70_000, type = TransactionType.EXPENSE, category = "Hogar", date = "2024-10-02", monthKey = "2024-10"),
+        Transaction(id = 3, title = "Supermercado", description = "Compras", amountCents = 20_000, type = TransactionType.EXPENSE, category = "Alimentos", date = "2024-10-02", monthKey = "2024-10"),
+        Transaction(id = 4, title = "Venta", description = "Garage", amountCents = 25_000, type = TransactionType.INCOME, category = "Otros", date = "2024-10-03", monthKey = "2024-10")
     )
 
     "calculateBalanceSummary aggregates totals" {

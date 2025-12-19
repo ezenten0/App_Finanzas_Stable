@@ -47,6 +47,9 @@ interface TransactionDao {
     @Query("DELETE FROM transactions WHERE id = :transactionId")
     suspend fun deleteTransaction(transactionId: Int)
 
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAll()
+
     @Query("SELECT * FROM transactions WHERE syncStatus != :syncedStatus")
     suspend fun getPendingTransactions(syncedStatus: SyncStatus = SyncStatus.SYNCED): List<TransactionEntity>
 

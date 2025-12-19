@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "104678249358",
+    "project_id": "finanzas-app-38337",
+    "storage_bucket": "finanzas-app-38337.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:104678249358:android:56071705cce44c2b8acadf",
+        "android_client_info": {
+          "package_name": "com.example.app_finanzas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "104678249358-pq6gj9emlko2nq4vf5u4lrkf4g0ol4pe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app_finanzas",
+            "certificate_hash": "e43f168865f40f2c579b42c231d546be71171053"
+          }
+        },
+        {
+          "client_id": "104678249358-t37cmvcopsua4iiv93stnad2vij7aotr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app_finanzas",
+            "certificate_hash": "efe3599a918232166f35acbdad56455177555b65"
+          }
+        },
+        {
+          "client_id": "104678249358-v55e19osctvgc1n0sb04eggcvqodpj9a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBswX1pRAMRTxx7vVjha15vrNQHH1aUzaY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "104678249358-v55e19osctvgc1n0sb04eggcvqodpj9a.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

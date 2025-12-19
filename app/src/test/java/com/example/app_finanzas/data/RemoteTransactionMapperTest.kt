@@ -19,17 +19,18 @@ class RemoteTransactionMapperTest {
             id = null,
             title = "Dividendos",
             description = "Pago mensual",
-            amount = 150.5,
+            amountCents = 15_050,
             type = "income",
             category = "Inversiones",
-            date = "2024-11-01"
+            date = "2024-11-01",
+            monthKey = "2024-11"
         )
 
         val entity = dto.toEntity()
 
         assertEquals(0, entity.id)
         assertEquals("Dividendos", entity.title)
-        assertEquals(150.5, entity.amount, 0.0)
+        assertEquals(15_050, entity.amountCents)
         assertEquals(TransactionTypeMapper.toStorage(TransactionType.INCOME), entity.type)
         assertEquals(SyncStatus.SYNCED, entity.syncStatus)
     }
@@ -40,10 +41,11 @@ class RemoteTransactionMapperTest {
             id = 0,
             title = "Renta",
             description = "Pago mensual",
-            amount = 400.0,
+            amountCents = 40_000,
             type = "income",
             category = "Hogar",
             date = "2024-11-05",
+            monthKey = "2024-11",
             syncStatus = SyncStatus.PENDING_UPLOAD
         )
 
@@ -51,6 +53,6 @@ class RemoteTransactionMapperTest {
 
         assertNull(remote.id)
         assertEquals("Renta", remote.title)
-        assertEquals("CREDIT", remote.type)
+        assertEquals("income", remote.type)
     }
 }

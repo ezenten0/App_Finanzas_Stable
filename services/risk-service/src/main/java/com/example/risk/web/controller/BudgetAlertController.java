@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,8 +40,21 @@ public class BudgetAlertController {
             }
     )
     public BudgetAlertResponse ingestBudgetAlert(
-            @RequestBody(required = false) @Valid BudgetAlertWebhookRequest request
+            @RequestBody(required = false) @Valid BudgetAlertWebhookRequest request,
+            Authentication authentication
     ) {
-        return insightsService.handleBudgetAlert(request);
+        BudgetAlertWebhookRequest safeRequest = request == null ? BudgetAlertWebhookRequest.empty() : request;
+        String userId = authentication != null && authentication.getPrincipal() != null
+                ? (String) authentication.getPrincipal()
+                : safeRequest.userId();
+        BudgetAlertWebhookRequest withUser = new BudgetAlertWebhookRequest(
+                userId,
+                safeRequest.category(),
+                safeRequest.limit(),
+                safeRequest.spent(),
+                safeRequest.progress(),
+                safeRequest.threshold()
+        );
+        return insightsService.handleBudgetAlert(withUser);
     }
 }

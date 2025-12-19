@@ -21,4 +21,8 @@ public record RiskCaseRequest(
         @Size(max = 200)
         String reason
 ) {
+
+    public RiskCaseRequest withUser(String userId) {
+        return new RiskCaseRequest(userId, score, status, reason);
+    }
 }

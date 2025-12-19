@@ -29,9 +29,10 @@ class HomeViewModel(
      * Updates the user identity displayed on the toolbar with the authenticated
      * information passed from the login flow.
      */
-    fun updateUserProfile(name: String, email: String) {
+    fun updateUserProfile(uid: String, name: String, email: String) {
         val displayName = name.trim().ifBlank { "Usuario" }
         _uiState.value = _uiState.value.copy(
+            userId = uid,
             userName = displayName,
             userEmail = email.trim()
         )

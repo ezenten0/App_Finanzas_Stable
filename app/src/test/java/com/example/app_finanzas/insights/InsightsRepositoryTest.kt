@@ -1,6 +1,6 @@
 package com.example.app_finanzas.insights
 
-import com.example.app_finanzas.data.insights.BudgetSnapshot
+import com.example.app_finanzas.data.budget.BudgetGoal
 import com.example.app_finanzas.data.insights.InsightsRepository
 import com.example.app_finanzas.data.insights.remote.RemoteInsightDto
 import com.example.app_finanzas.data.insights.remote.RemoteInsightsRequest
@@ -36,9 +36,9 @@ class InsightsRepositoryTest {
         val localInsights = listOf(
             FinancialInsight("local-budget", "Meta local", "Generado offline", InsightCategory.BUDGET)
         )
-        val budgets = listOf(BudgetSnapshot("Food", 100.0, 80.0, 0.8))
+        val budgets = listOf(BudgetGoal(id = 1, category = "Food", limit = 100.0, iconKey = "food"))
 
-        val result = repository.fetchInsights(localInsights, budgets)
+        val result = repository.fetchInsights(budgets = budgets, localFallback = localInsights)
 
         assertTrue(result.insights.any { it.id == "local-budget" })
         assertEquals(1, api.capturedRequest?.budgets?.size)
@@ -54,7 +54,7 @@ class InsightsRepositoryTest {
             FinancialInsight("savings", "Ahorro", "Local", InsightCategory.SAVINGS)
         )
 
-        val result = repository.fetchInsights(localInsights, emptyList())
+        val result = repository.fetchInsights(budgets = emptyList(), localFallback = localInsights)
 
         assertEquals(2, result.insights.size)
         assertEquals(1, result.insights.count { it.id == "local-budget" })

@@ -4,6 +4,8 @@ import com.example.app_finanzas.data.local.transaction.TransactionEntity
 import com.example.app_finanzas.data.sync.SyncStatus
 import com.example.app_finanzas.home.model.Transaction
 import com.example.app_finanzas.data.transaction.TransactionTypeMapper
+import com.example.app_finanzas.data.transaction.calculateMonthKey
+import kotlin.math.abs
 
 /**
  * DTO that represents transactions in the remote API. Mapping helpers are
@@ -13,10 +15,11 @@ data class RemoteTransactionDto(
     val id: Int?,
     val title: String,
     val description: String,
-    val amount: Double,
+    val amountCents: Long,
     val type: String,
     val category: String,
-    val date: String
+    val date: String,
+    val monthKey: String
 )
 
 fun RemoteTransactionDto.toEntity(): TransactionEntity {
@@ -25,10 +28,11 @@ fun RemoteTransactionDto.toEntity(): TransactionEntity {
         id = id ?: 0,
         title = title,
         description = description,
-        amount = amount,
+        amountCents = abs(amountCents),
         type = canonicalType,
         category = category,
         date = date,
+        monthKey = monthKey.ifBlank { calculateMonthKey(date) },
         syncStatus = SyncStatus.SYNCED
     )
 }
@@ -39,10 +43,11 @@ fun TransactionEntity.toRemoteDto(): RemoteTransactionDto {
         id = if (id == 0) null else id,
         title = title,
         description = description,
-        amount = amount,
+        amountCents = amountCents,
         type = canonicalType,
         category = category,
-        date = date
+        date = date,
+        monthKey = monthKey
     )
 }
 
@@ -51,9 +56,10 @@ fun Transaction.toRemoteDto(): RemoteTransactionDto {
         id = if (id == 0) null else id,
         title = title,
         description = description,
-        amount = amount,
+        amountCents = amountCents,
         type = TransactionTypeMapper.toStorage(type),
         category = category,
-        date = date
+        date = date,
+        monthKey = monthKey
     )
 }

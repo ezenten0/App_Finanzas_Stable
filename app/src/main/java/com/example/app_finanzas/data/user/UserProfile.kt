@@ -1,7 +1,7 @@
 package com.example.app_finanzas.data.user
 
 data class UserProfile(
-    val id: Int,
+    val uid: String,
     val name: String,
     val email: String
 )

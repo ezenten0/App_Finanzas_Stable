@@ -77,7 +77,7 @@ object NetworkModule {
         }
     }
 
-    private fun buildHttpClient(tokenProvider: AuthTokenProvider = StaticAuthTokenProvider): OkHttpClient {
+    private fun buildHttpClient(tokenProvider: AuthTokenProvider = FirebaseAuthTokenProvider()): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
@@ -90,7 +90,7 @@ object NetworkModule {
             .build()
     }
 
-    private fun buildRetrofit(baseUrl: String, tokenProvider: AuthTokenProvider = StaticAuthTokenProvider): Retrofit {
+    private fun buildRetrofit(baseUrl: String, tokenProvider: AuthTokenProvider = FirebaseAuthTokenProvider()): Retrofit {
         return Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(buildHttpClient(tokenProvider))
@@ -104,7 +104,7 @@ object NetworkModule {
     }
 
     fun provideFinanceServiceApi(
-        tokenProvider: AuthTokenProvider = StaticAuthTokenProvider
+        tokenProvider: AuthTokenProvider = FirebaseAuthTokenProvider()
     ): FinanceServiceApi {
         val retrofit = buildRetrofit(NetworkConfig.FINANCE_SERVICE_BASE_URL, tokenProvider)
         return retrofit.create()

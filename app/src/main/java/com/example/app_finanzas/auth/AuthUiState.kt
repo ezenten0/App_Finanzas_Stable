@@ -14,5 +14,6 @@ data class AuthUiState(
     val confirmPasswordError: String? = null,
     val generalError: String? = null,
     val isSubmitting: Boolean = false,
+    val isGoogleSubmitting: Boolean = false,
     val authenticatedUser: UserProfile? = null
 )

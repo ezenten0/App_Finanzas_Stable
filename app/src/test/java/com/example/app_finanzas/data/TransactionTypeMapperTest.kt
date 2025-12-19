@@ -13,14 +13,14 @@ class TransactionTypeMapperTest {
 
     @Test
     fun `toStorage sends credit and debit to backend`() {
-        assertEquals("CREDIT", TransactionTypeMapper.toStorage(TransactionType.INCOME))
-        assertEquals("DEBIT", TransactionTypeMapper.toStorage(TransactionType.EXPENSE))
+        assertEquals("income", TransactionTypeMapper.toStorage(TransactionType.INCOME))
+        assertEquals("expense", TransactionTypeMapper.toStorage(TransactionType.EXPENSE))
     }
 
     @Test
     fun `fromStorage understands backend values`() {
-        assertEquals(TransactionType.INCOME, TransactionTypeMapper.fromStorage("CREDIT"))
-        assertEquals(TransactionType.EXPENSE, TransactionTypeMapper.fromStorage("DEBIT"))
+        assertEquals(TransactionType.INCOME, TransactionTypeMapper.fromStorage("income"))
+        assertEquals(TransactionType.EXPENSE, TransactionTypeMapper.fromStorage("expense"))
     }
 
     @Test
@@ -36,17 +36,18 @@ class TransactionTypeMapperTest {
             id = 0,
             title = "Salary",
             description = "Monthly paycheck",
-            amount = 1000.0,
+            amountCents = 100_000,
             type = TransactionType.INCOME,
             category = "Income",
-            date = "2024-10-10"
+            date = "2024-10-10",
+            monthKey = "2024-10"
         )
 
         val remote = transaction.toRemoteDto()
         val entity = remote.toEntity()
 
-        assertEquals("CREDIT", remote.type)
-        assertEquals("CREDIT", entity.type)
+        assertEquals("income", remote.type)
+        assertEquals("income", entity.type)
         assertEquals(TransactionType.INCOME, TransactionTypeMapper.fromStorage(entity.type))
     }
 
@@ -56,17 +57,18 @@ class TransactionTypeMapperTest {
             id = 1,
             title = "Groceries",
             description = "Weekly shopping",
-            amount = 150.0,
+            amountCents = 15_000,
             type = TransactionType.EXPENSE,
             category = "Food",
-            date = "2024-10-11"
+            date = "2024-10-11",
+            monthKey = "2024-10"
         )
 
         val remote = transaction.toRemoteDto()
         val entity = remote.toEntity()
 
-        assertEquals("DEBIT", remote.type)
-        assertEquals("DEBIT", entity.type)
+        assertEquals("expense", remote.type)
+        assertEquals("expense", entity.type)
         assertEquals(TransactionType.EXPENSE, TransactionTypeMapper.fromStorage(entity.type))
     }
 }

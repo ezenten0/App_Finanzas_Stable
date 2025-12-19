@@ -10,7 +10,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.kapt)
+    id("com.google.devtools.ksp")
+    id("com.google.gms.google-services")
     id("jacoco")
 }
 
@@ -37,9 +38,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // 🔹 URLs base inyectadas desde local.properties
-        val ledgerUrl = localProps.getProperty("LEDGER_BASE_URL", "http://10.0.2.2:8081")
-        val riskUrl   = localProps.getProperty("RISK_BASE_URL",   "http://10.0.2.2:8082")
-        val notifUrl  = localProps.getProperty("NOTIF_BASE_URL",  "http://10.0.2.2:8083")
+        val ledgerUrl = localProps.getProperty("LEDGER_BASE_URL", "http://10.0.2.2:8080")
+        val riskUrl   = localProps.getProperty("RISK_BASE_URL",   "http://10.0.2.2:8081")
+        val notifUrl  = localProps.getProperty("NOTIF_BASE_URL",  "http://10.0.2.2:8082")
 
         buildConfigField("String", "LEDGER_BASE_URL", "\"$ledgerUrl\"")
         buildConfigField("String", "RISK_BASE_URL",   "\"$riskUrl\"")
@@ -108,6 +109,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.navigation.compose)
     implementation("com.google.accompanist:accompanist-navigation-animation:0.36.0")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation(libs.retrofit)
     implementation(libs.retrofit.moshi)
     implementation(libs.okhttp.logging)
@@ -119,7 +121,8 @@ dependencies {
     implementation(libs.ktor.client.websockets)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
-    kapt(libs.androidx.room.compiler)
+    implementation(libs.firebase.dataconnect)
+    ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
@@ -139,6 +142,12 @@ dependencies {
     // Permite que JUnit Platform ejecute pruebas de JUnit 4
     testImplementation("junit:junit:4.13.2")
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine:6.0.1") // usa la misma versión que tu JUnit 5
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
+    // Declare the dependency for the Cloud Firestore library
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation("com.google.firebase:firebase-firestore")
 }
 
 jacoco {

@@ -1,6 +1,7 @@
 package com.example.risk.repository;
 
 import com.example.risk.domain.RiskCase;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -9,4 +10,8 @@ import org.springframework.stereotype.Repository;
 public interface RiskCaseRepository extends JpaRepository<RiskCase, Long> {
 
     Optional<RiskCase> findTopByUserIdAndReason(String userId, String reason);
+
+    List<RiskCase> findAllByUserId(String userId);
+
+    Optional<RiskCase> findByIdAndUserId(Long id, String userId);
 }

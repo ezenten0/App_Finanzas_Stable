@@ -37,8 +37,8 @@ class TransactionDaoTest {
     @Test
     fun insertAndRetrieveTransactions() = runBlocking {
         val entities = listOf(
-            TransactionEntity(id = 1, title = "Pago", description = "Salario", amount = 1000.0, type = "INCOME", category = "Salario", date = "2024-10-01"),
-            TransactionEntity(id = 2, title = "Gasto", description = "Cine", amount = 50.0, type = "EXPENSE", category = "Entretenimiento", date = "2024-10-02")
+            TransactionEntity(id = 1, title = "Pago", description = "Salario", amountCents = 100_000, type = "income", category = "Salario", date = "2024-10-01", monthKey = "2024-10"),
+            TransactionEntity(id = 2, title = "Gasto", description = "Cine", amountCents = 5_000, type = "expense", category = "Entretenimiento", date = "2024-10-02", monthKey = "2024-10")
         )
 
         dao.upsertTransactions(entities)
