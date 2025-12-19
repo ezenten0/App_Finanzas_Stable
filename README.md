@@ -5,7 +5,7 @@ El repositorio también incluye microservicios **Spring Boot** (ledger/risk/noti
 
 ---
 
-## ✅ Funcionalidades principales (App móvil)
+## Funcionalidades principales (App móvil)
 
 ### Autenticación
 - Login con **Firebase Auth**
@@ -34,7 +34,7 @@ El repositorio también incluye microservicios **Spring Boot** (ledger/risk/noti
 
 ---
 
-## 🧱 Arquitectura (MVVM)
+## Arquitectura (MVVM)
 
 - **Screens / Composables (UI)**: renderizan el estado y emiten eventos (intentos del usuario).
 - **ViewModel**: orquesta estado (`StateFlow`/`State`), validación y llamadas a repositorios.
@@ -46,7 +46,7 @@ El repositorio también incluye microservicios **Spring Boot** (ledger/risk/noti
 
 ---
 
-## 🗂️ Estructura del código fuente (App y Microservicios)
+## Estructura del código fuente (App y Microservicios)
 
 ### App Android
 - Módulo: `:app`
@@ -64,7 +64,7 @@ El repositorio también incluye microservicios **Spring Boot** (ledger/risk/noti
 
 ---
 
-## 🔥 Firebase / Firestore (uso real en la app)
+## Firebase / Firestore (uso real en la app)
 
 ### Config Firebase
 - Archivo requerido: `app/google-services.json`
@@ -87,9 +87,9 @@ Colección por usuario:
 
 ---
 
-## 🌐 Endpoints usados (propios y externos)
+## Endpoints usados (propios y externos)
 
-### ✅ Microservicios propios (Spring Boot)
+### Microservicios propios (Spring Boot)
 
 > **Modo microservicios reales (puertos por defecto del backend en este repo):**
 - Ledger: `http://localhost:8080`
@@ -137,7 +137,7 @@ Base: `/api/notifications`
 
 ---
 
-### 🌍 API externa (pública)
+### API externa (pública)
 - Risk-service consume tasas FX desde:
   - `https://api.exchangerate.host/latest?base=USD&symbols=MXN,EUR`
 - Configurable por property:
@@ -145,13 +145,13 @@ Base: `/api/notifications`
 
 ---
 
-### ☁️ Servicios externos (no REST propio)
+###  Servicios externos (no REST propio)
 - **Firebase Auth** (login email/password + Google)
 - **Cloud Firestore** (lectura/escritura por SDK, no por endpoints REST propios)
 
 ---
 
-## ▶️ Instrucciones para ejecutar el proyecto
+##  Instrucciones para ejecutar el proyecto
 
 ### Requisitos
 - Android Studio (Koala o superior recomendado)
@@ -176,7 +176,7 @@ La app lee URLs desde **`local.properties`** (raíz) usando:
 - `RISK_BASE_URL`
 - `NOTIF_BASE_URL`
 
-📌 Ejemplo recomendado si corres microservicios reales (emulador Android):
+ Ejemplo recomendado si corres microservicios reales (emulador Android):
 ```properties
 LEDGER_BASE_URL=http://10.0.2.2:8080
 RISK_BASE_URL=http://10.0.2.2:8081
